@@ -1,0 +1,12 @@
+- topic: sub_6_a
+  resp_topic: resp
+  device_type_id: dtid
+  device_local_id: dlid
+  service_local_id: slid
+  device_name: name
+
+- topic: sub_6_b
+  device_type_id: dtid
+  device_local_id: dlid
+  service_local_id: slid
+  device_name: name
