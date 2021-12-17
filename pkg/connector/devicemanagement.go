@@ -97,7 +97,7 @@ func (this *Connector) updateTopics() (err error) {
 	usedCommands := map[string]bool{}
 	for _, topic := range commands {
 		usedDevices[topic.GetLocalDeviceId()] = topic
-		commandId := getCommandId(topic)
+		commandId := getCommandIdFromDesc(topic)
 		usedCommands[commandId] = true
 		this.commandTopicRegister.Set(commandId, topic)
 	}
@@ -145,8 +145,12 @@ func (this *Connector) updateTopics() (err error) {
 	return nil
 }
 
-func getCommandId(desc TopicDescription) string {
-	return url.PathEscape(desc.GetLocalDeviceId()) + "/" + url.PathEscape(desc.GetLocalServiceId())
+func getCommandIdFromDesc(desc TopicDescription) string {
+	return getCommandId(desc.GetLocalDeviceId(), desc.GetLocalServiceId())
+}
+
+func getCommandId(deviceId string, serviceId string) string {
+	return url.PathEscape(deviceId) + "/" + url.PathEscape(serviceId)
 }
 
 func (this *Connector) addDevice(device DeviceDescription) (err error) {

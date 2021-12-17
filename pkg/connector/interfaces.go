@@ -47,6 +47,7 @@ type MgwClient interface {
 	StopListenToDeviceCommands(deviceId string) error
 	SetDevice(deviceId string, name string, deviceTypeid string, state string) error
 	RemoveDevice(deviceId string) error
+	SendEvent(deviceId string, serviceId string, value []byte) error
 }
 
 type TopicDescription interface {

@@ -136,6 +136,11 @@ func (this *MgwMock) SetDevice(deviceId string, name string, deviceTypeid string
 	return nil
 }
 
+func (this *MgwMock) SendEvent(deviceId string, serviceId string, value []byte) error {
+	log.Println("SendEvent", deviceId, serviceId, string(value))
+	return nil
+}
+
 func newMqttMock(ctx context.Context, config configuration.Config) (MqttMock, error) {
 	return MqttMock{}, nil
 }

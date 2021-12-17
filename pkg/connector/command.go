@@ -16,8 +16,22 @@
 
 package connector
 
-import "github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
+import (
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
+	"log"
+)
 
 func (this *Connector) CommandHandler(deviceId string, serviceId string, command mgw.Command) {
-	//TODO
+	go func() {
+		cmdId := getCommandId(deviceId, serviceId)
+		desc, ok := this.commandTopicRegister.Get(cmdId)
+		if !ok {
+			log.Println("WARNING: got command for unknown device description", cmdId)
+			return
+		}
+		err := this.mqtt.Publish(desc.GetCmdTopic(), 2, false, []byte(command.Data))
+		if err != nil {
+			log.Println("ERROR: unable to send event to mgw", err)
+		}
+	}()
 }

@@ -65,13 +65,14 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 			deviceToDeviceType[deviceId] = deviceTypeId
 		}
 
-		//check for response topic reuse for other responses or commands
+		//TODO
 
-		//check for device-id + service-id reuse in commands
+		//check for response topic reuse for commands
 
-		//check for event topic reuse for other events or commands
+		//check for device-id + service-id reuse in commands-topics (a command topic can be used for mor than one service)
 
-		//check for command topic reuse for other commands or events
+		//check for event topic reuse for other events --> error
+
 	}
 	return nil
 }

@@ -16,8 +16,20 @@
 
 package connector
 
+import "log"
+
 func (this *Connector) EventHandler(topic string, payload []byte) {
-	//TODO
+	go func() {
+		desc, ok := this.eventTopicRegister.Get(topic)
+		if !ok {
+			log.Println("WARNING: got event for unknown topic description", topic)
+			return
+		}
+		err := this.mgwClient.SendEvent(desc.GetLocalDeviceId(), desc.GetLocalServiceId(), payload)
+		if err != nil {
+			log.Println("ERROR: unable to send event to mgw", err)
+		}
+	}()
 }
 
 func (this *Connector) addEvent(topicDesc TopicDescription) (err error) {
