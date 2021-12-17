@@ -1,14 +1,18 @@
-FROM golang:1.17 AS builder
+#TODO
+# remove after release of go 1.18
+FROM golang:1.17 AS goenv
+RUN go install golang.org/dl/gotip@latest
+RUN gotip download
+
+
+#TODO
+# replace 'FROM goenv AS builder' with 'FROM golang:1.18 AS builder' after release of go 1.18
+FROM goenv AS builder
 
 COPY . /go/src/app
 WORKDIR /go/src/app
 
 ENV GO111MODULE=on
-
-#TODO
-# remove on release of go 1.18
-RUN go install golang.org/dl/gotip@latest
-RUN gotip download
 
 #TODO
 # replace 'gotip' with 'go' on release of go 1.18
