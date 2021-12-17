@@ -17,6 +17,7 @@
 package topicdescription
 
 import (
+	"encoding/json"
 	"reflect"
 	"sort"
 	"testing"
@@ -165,29 +166,33 @@ func TestLoadDir(t *testing.T) {
 	}, false)...)
 
 	sort.Slice(expected, func(i, j int) bool {
-		return expected[i].Topic < expected[j].Topic
+		return expected[i].GetTopic() < expected[j].GetTopic()
 	})
 
 	sort.Slice(result, func(i, j int) bool {
-		return result[i].Topic < result[j].Topic
+		return result[i].GetTopic() < result[j].GetTopic()
 	})
 
 	if !reflect.DeepEqual(result, expected) {
-		t.Error(result, "\n", expected)
+		rj, _ := json.Marshal(result)
+		ej, _ := json.Marshal(expected)
+		t.Error(string(rj), "\n", string(ej))
 	}
 }
 
 func generateExpected(topics []string, withResp bool) (result []TopicDescription) {
 	for _, topic := range topics {
 		temp := TopicDescription{
-			Topic:          topic,
 			DeviceTypeId:   "dtid",
 			DeviceLocalId:  "dlid",
 			ServiceLocalId: "slid",
 			DeviceName:     "name",
 		}
 		if withResp {
+			temp.CmdTopic = topic
 			temp.RespTopic = "resp"
+		} else {
+			temp.EventTopic = topic
 		}
 		result = append(result, temp)
 	}

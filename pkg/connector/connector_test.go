@@ -23,6 +23,7 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"log"
+	"strings"
 	"testing"
 )
 
@@ -36,9 +37,9 @@ func TestConnectorInit(t *testing.T) {
 		Debug:           false,
 	}, NewTopicDescriptionProvider(func(config configuration.Config) (desc []MockDesc, err error) {
 		return []MockDesc{
-			"a",
-			"foo",
-			"b",
+			"c:a",
+			"e:foo",
+			"c:b",
 		}, nil
 	}), NewMgwFactory(newMgwMock), NewMqttFactory(newMqttMock))
 	fmt.Println(err, *temp)
@@ -63,7 +64,24 @@ func TestConnectorAlternative(t *testing.T) {
 type MockDesc string
 
 func (this MockDesc) GetTopic() string {
+	if strings.HasPrefix(string(this), "e:") || strings.HasPrefix(string(this), "c:") {
+		return string(this)[2:]
+	}
 	return string(this)
+}
+
+func (this MockDesc) GetEventTopic() string {
+	if strings.HasPrefix(string(this), "e:") {
+		return string(this)[2:]
+	}
+	return ""
+}
+
+func (this MockDesc) GetCmdTopic() string {
+	if strings.HasPrefix(string(this), "c:") {
+		return string(this)[2:]
+	}
+	return ""
 }
 
 func (this MockDesc) GetDeviceName() string {

@@ -52,6 +52,8 @@ type MgwClient interface {
 type TopicDescription interface {
 	DeviceDescription
 	GetTopic() string
+	GetEventTopic() string
+	GetCmdTopic() string
 	GetResponseTopic() string
 	GetLocalServiceId() string
 }

@@ -1,11 +1,11 @@
-- topic: sub2_6_a
+- cmd_topic: sub2_6_a
   resp_topic: resp
   device_type_id: dtid
   device_local_id: dlid
   service_local_id: slid
   device_name: name
 
-- topic: sub2_6_b
+- event_topic: sub2_6_b
   device_type_id: dtid
   device_local_id: dlid
   service_local_id: slid

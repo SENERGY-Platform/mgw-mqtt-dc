@@ -18,6 +18,8 @@ package connector
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mqtt"
@@ -37,6 +39,7 @@ type Connector struct {
 	updateTicker         *time.Ticker
 	topicDescProvider    TopicDescriptionProvider
 	mqtt                 MqttClient
+	updateTopicsMux      sync.Mutex
 }
 
 func New(ctx context.Context, config configuration.Config) (result *Connector, err error) {
@@ -69,7 +72,7 @@ func NewWithInterfaces(ctx context.Context, config configuration.Config, topicDe
 func (this *Connector) NotifyRefresh() {
 	err := this.updateTopics()
 	if err != nil {
-		log.Println("ERROR: unable to update device registry after refresh notification", err)
+		log.Println("ERROR: unable to update device registry after refresh notification:", err)
 	}
 	return
 }
@@ -113,10 +116,47 @@ func (this *Connector) startPeriodicalTopicRegistryUpdate(ctx context.Context) (
 	return nil
 }
 
+func (this *Connector) validateTopicDescriptions(topics []TopicDescription) error {
+	deviceToName := map[string]string{}
+	deviceToDeviceType := map[string]string{}
+	for _, topic := range topics {
+		event := topic.GetEventTopic()
+		cmd := topic.GetCmdTopic()
+		resp := topic.GetResponseTopic()
+		t := topic.GetTopic()
+		deviceId := topic.GetLocalDeviceId()
+		deviceName := topic.GetDeviceName()
+		deviceTypeId := topic.GetDeviceTypeId()
+		if t == "" || cmd == event || (cmd != "" && event != "") {
+			j, _ := json.Marshal(map[string]string{"t": t, "e": event, "c": cmd, "r": resp})
+			return errors.New("invalid topic description: expect either event or command topic: " + string(j))
+		}
+		if known, exists := deviceToName[deviceId]; exists && known != deviceName {
+			return errors.New("device " + deviceId + " has multiple name assignments: " + known + " and " + deviceName)
+		} else {
+			deviceToName[deviceId] = deviceName
+		}
+		if known, exists := deviceToDeviceType[deviceId]; exists && known != deviceTypeId {
+			return errors.New("device " + deviceId + " has multiple device-type-id assignments: " + known + " and " + deviceTypeId)
+		} else {
+			deviceToDeviceType[deviceId] = deviceTypeId
+		}
+		if event != "" && resp != "" {
+			j, _ := json.Marshal(map[string]string{"t": t, "e": event, "c": cmd, "r": resp})
+			log.Println("WARNING: response topic will not be used if event topic is set", string(j))
+		}
+	}
+	return nil
+}
+
 func (this *Connector) EventHandler(topic string, payload []byte) {
 	//TODO
 }
 
 func (this *Connector) CommandHandler(deviceId string, serviceId string, command mgw.Command) {
+	//TODO
+}
+
+func (this *Connector) ResponseHandler(topic string, payload []byte) {
 	//TODO
 }

@@ -31,7 +31,8 @@ import (
 )
 
 type TopicDescription struct {
-	Topic          string `json:"topic" yaml:"topic"`
+	CmdTopic       string `json:"cmd_topic" yaml:"cmd_topic"`
+	EventTopic     string `json:"event_topic" yaml:"event_topic"`
 	RespTopic      string `json:"resp_topic" yaml:"resp_topic"`
 	DeviceTypeId   string `json:"device_type_id" yaml:"device_type_id"`
 	DeviceLocalId  string `json:"device_local_id" yaml:"device_local_id"`
@@ -40,7 +41,18 @@ type TopicDescription struct {
 }
 
 func (this TopicDescription) GetTopic() string {
-	return this.Topic
+	if this.EventTopic != "" {
+		return this.EventTopic
+	}
+	return this.CmdTopic
+}
+
+func (this TopicDescription) GetEventTopic() string {
+	return this.EventTopic
+}
+
+func (this TopicDescription) GetCmdTopic() string {
+	return this.CmdTopic
 }
 
 func (this TopicDescription) GetDeviceName() string {
@@ -162,7 +174,8 @@ func LoadCsv(location string) (topicDescriptions []TopicDescription, err error) 
 	}
 	for _, line := range lines {
 		temp := TopicDescription{
-			Topic:          "",
+			CmdTopic:       "",
+			EventTopic:     "",
 			RespTopic:      "",
 			DeviceTypeId:   "",
 			DeviceLocalId:  "",
@@ -170,18 +183,19 @@ func LoadCsv(location string) (topicDescriptions []TopicDescription, err error) 
 			DeviceName:     "",
 		}
 		rows := len(line)
-		if rows != 5 && rows != 6 {
-			err = errors.New("invalid cow count (expect 5 or 6 rows)")
+		if rows != 6 && rows != 7 {
+			err = errors.New("invalid cow count (expect 6 or 7 rows)")
 			log.Println("error on config load:\n", location, "\n", err)
 			return topicDescriptions, err
 		}
-		temp.Topic = strings.TrimSpace(line[0])
-		temp.DeviceLocalId = strings.TrimSpace(line[1])
-		temp.DeviceName = strings.TrimSpace(line[2])
-		temp.DeviceTypeId = strings.TrimSpace(line[3])
-		temp.ServiceLocalId = strings.TrimSpace(line[4])
-		if rows == 6 {
-			temp.RespTopic = strings.TrimSpace(line[5])
+		temp.CmdTopic = strings.TrimSpace(line[0])
+		temp.EventTopic = strings.TrimSpace(line[1])
+		temp.DeviceLocalId = strings.TrimSpace(line[2])
+		temp.DeviceName = strings.TrimSpace(line[3])
+		temp.DeviceTypeId = strings.TrimSpace(line[4])
+		temp.ServiceLocalId = strings.TrimSpace(line[5])
+		if rows == 7 {
+			temp.RespTopic = strings.TrimSpace(line[6])
 		}
 		topicDescriptions = append(topicDescriptions, temp)
 	}

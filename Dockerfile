@@ -5,8 +5,13 @@ WORKDIR /go/src/app
 
 ENV GO111MODULE=on
 
+#TODO
+# remove on release of go 1.18
 RUN go install golang.org/dl/gotip@latest
 RUN gotip download
+
+#TODO
+# replace 'gotip' with 'go' on release of go 1.18
 RUN CGO_ENABLED=0 GOOS=linux gotip build -o app
 
 RUN git log -1 --oneline > version.txt

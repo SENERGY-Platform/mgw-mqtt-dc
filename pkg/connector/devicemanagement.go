@@ -19,13 +19,25 @@ package connector
 import (
 	"errors"
 	"log"
+	"sort"
 )
 
 func (this *Connector) updateTopics() (err error) {
+	this.updateTopicsMux.Lock()
+	defer this.updateTopicsMux.Unlock()
 	if this.topicDescProvider == nil {
 		return errors.New("missing topicDescProvider")
 	}
 	topics, err := this.topicDescProvider(this.config)
+	if err != nil {
+		return err
+	}
+
+	sort.Slice(topics, func(i, j int) bool {
+		return topics[i].GetTopic() < topics[j].GetTopic()
+	})
+
+	err = this.validateTopicDescriptions(topics)
 	if err != nil {
 		return err
 	}
@@ -41,9 +53,9 @@ func (this *Connector) updateTopics() (err error) {
 	// populate topic registry and usedDevices
 	for _, topic := range topics {
 		usedDevices[topic.GetLocalDeviceId()] = topic
-		if _, ok := this.topicRegisterGet(topic.GetTopic()); !ok {
+		if old, ok := this.topicRegisterGet(topic.GetTopic()); !ok {
 			err = this.addTopic(topic)
-		} else {
+		} else if !EqualTopicDesc(old, topic) {
 			err = this.updateTopic(topic)
 		}
 		if err != nil {
@@ -55,11 +67,11 @@ func (this *Connector) updateTopics() (err error) {
 	removedDevices := map[string]bool{}
 
 	//find old devices to remove
-	for id, desc := range oldDevices {
+	for id, oldDesc := range oldDevices {
 		if _, ok := usedDevices[id]; !ok {
 			if _, ok2 := removedDevices[id]; !ok2 {
 				removedDevices[id] = true
-				err := this.removeDevice(desc)
+				err := this.removeDevice(oldDesc)
 				if err != nil {
 					return err
 				}
@@ -67,9 +79,9 @@ func (this *Connector) updateTopics() (err error) {
 		}
 	}
 
-	//find new devices to add
+	//find new devices to add/update
 	for id, desc := range usedDevices {
-		if _, ok := oldDevices[id]; !ok {
+		if oldDesc, ok := oldDevices[id]; !ok {
 			if _, ok2 := addedDevices[id]; !ok2 {
 				addedDevices[id] = true
 				err := this.addDevice(desc)
@@ -77,41 +89,77 @@ func (this *Connector) updateTopics() (err error) {
 					return err
 				}
 			}
+		} else if !EqualDeviceDesc(oldDesc, desc) {
+			err := this.updateDevice(desc)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
 }
 
-func (this *Connector) addTopic(topicDesc TopicDescription) error {
-	topic := topicDesc.GetTopic()
-	log.Println("add", topic)
-	err := this.mqtt.Subscribe(topic, 2, this.EventHandler)
+func (this *Connector) addTopic(topicDesc TopicDescription) (err error) {
+	eventTopic := topicDesc.GetEventTopic()
+	respTopic := topicDesc.GetResponseTopic()
+	if eventTopic != "" {
+		err = this.mqtt.Subscribe(eventTopic, 2, this.EventHandler)
+	} else if respTopic != "" {
+		err = this.mqtt.Subscribe(respTopic, 2, this.ResponseHandler)
+	}
 	if err != nil {
 		return err
 	}
-	this.topicRegisterSet(topic, topicDesc)
+	this.topicRegisterSet(topicDesc.GetTopic(), topicDesc)
 	return nil
 }
 
 func (this *Connector) updateTopic(topic TopicDescription) error {
-	log.Println("update", topic.GetTopic())
-	this.topicRegisterSet(topic.GetTopic(), topic)
-	return nil
-}
-
-func (this *Connector) removeTopic(topic string) error {
-	log.Println("removeTopic", topic)
-	err := this.mqtt.Unsubscribe(topic)
+	err := this.removeTopic(topic.GetTopic())
 	if err != nil {
 		return err
+	}
+	return this.addTopic(topic)
+}
+
+func (this *Connector) removeTopic(topic string) (err error) {
+	desc, exists := this.topicRegisterGet(topic)
+	if !exists {
+		return nil
+	}
+	eventTopic := desc.GetEventTopic()
+	respTopic := desc.GetResponseTopic()
+	if eventTopic != "" {
+		err = this.mqtt.Unsubscribe(eventTopic)
+	} else if respTopic != "" {
+		err = this.mqtt.Unsubscribe(respTopic)
 	}
 	this.topicRegisterRemove(topic)
 	return nil
 }
 
-func (this *Connector) addDevice(device DeviceDescription) error {
-	return this.registerDevice(device.GetLocalDeviceId(), device.GetDeviceName(), device.GetDeviceTypeId())
+func (this *Connector) addDevice(device DeviceDescription) (err error) {
+	err = this.mgwClient.SetDevice(device.GetLocalDeviceId(), device.GetDeviceName(), device.GetDeviceTypeId(), "")
+	if err != nil {
+		log.Println("ERROR: unable to send device info to mgw", err)
+		return err
+	}
+	err = this.mgwClient.ListenToDeviceCommands(device.GetLocalDeviceId(), this.CommandHandler)
+	if err != nil {
+		log.Println("ERROR: unable to subscribe to device commands", err)
+		return err
+	}
+	return nil
+}
+
+func (this *Connector) updateDevice(device DeviceDescription) (err error) {
+	err = this.mgwClient.SetDevice(device.GetLocalDeviceId(), device.GetDeviceName(), device.GetDeviceTypeId(), "")
+	if err != nil {
+		log.Println("ERROR: unable to send device info to mgw", err)
+		return err
+	}
+	return nil
 }
 
 func (this *Connector) removeDevice(device DeviceDescription) error {
@@ -126,20 +174,6 @@ func (this *Connector) removeDevice(device DeviceDescription) error {
 		log.Println("topic description has ben removed but device deletion is disabled", device.GetDeviceName(), id)
 	}
 	return this.mgwClient.StopListenToDeviceCommands(id)
-}
-
-func (this *Connector) registerDevice(id string, name string, deviceTypeid string) (err error) {
-	err = this.mgwClient.SetDevice(id, name, deviceTypeid, "")
-	if err != nil {
-		log.Println("ERROR: unable to send device info to mgw", err)
-		return err
-	}
-	err = this.mgwClient.ListenToDeviceCommands(id, this.CommandHandler)
-	if err != nil {
-		log.Println("ERROR: unable to subscribe to device commands", err)
-		return err
-	}
-	return nil
 }
 
 func (this *Connector) topicRegisterSet(topic string, desc TopicDescription) {
@@ -178,4 +212,25 @@ func (this *Connector) topicRegisterGetAll() (result map[string]TopicDescription
 		result[key] = value
 	}
 	return
+}
+
+func EqualTopicDesc(old TopicDescription, topic TopicDescription) bool {
+	if EqualDeviceDesc(old, topic) &&
+		old.GetTopic() == topic.GetTopic() &&
+		old.GetEventTopic() == topic.GetEventTopic() &&
+		old.GetResponseTopic() == topic.GetResponseTopic() &&
+		old.GetCmdTopic() == topic.GetCmdTopic() &&
+		old.GetLocalServiceId() == topic.GetLocalServiceId() {
+		return true
+	}
+	return false
+}
+
+func EqualDeviceDesc(old DeviceDescription, topic DeviceDescription) bool {
+	if old.GetDeviceName() == topic.GetDeviceName() &&
+		old.GetLocalDeviceId() == topic.GetLocalDeviceId() &&
+		old.GetDeviceTypeId() == topic.GetDeviceTypeId() {
+		return true
+	}
+	return false
 }
