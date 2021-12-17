@@ -18,8 +18,6 @@ package connector
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mqtt"
@@ -31,15 +29,16 @@ import (
 )
 
 type Connector struct {
-	mgwClient            MgwClient
-	topicRegister        map[string]TopicDescription
-	topicRegisterMux     sync.Mutex
-	config               configuration.Config
-	updateTickerDuration time.Duration
-	updateTicker         *time.Ticker
-	topicDescProvider    TopicDescriptionProvider
-	mqtt                 MqttClient
-	updateTopicsMux      sync.Mutex
+	mgwClient             MgwClient
+	config                configuration.Config
+	updateTickerDuration  time.Duration
+	updateTicker          *time.Ticker
+	topicDescProvider     TopicDescriptionProvider
+	mqtt                  MqttClient
+	updateTopicsMux       sync.Mutex
+	eventTopicRegister    *Map[TopicDescription]
+	responseTopicRegister *Map[TopicDescription]
+	commandTopicRegister  *Map[TopicDescription]
 }
 
 func New(ctx context.Context, config configuration.Config) (result *Connector, err error) {
@@ -60,11 +59,13 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 
 func NewWithInterfaces(ctx context.Context, config configuration.Config, topicDescProvider TopicDescriptionProvider, mgwClient MgwClient, mqttClient MqttClient) (result *Connector, err error) {
 	result = &Connector{
-		config:            config,
-		topicRegister:     map[string]TopicDescription{},
-		topicDescProvider: topicDescProvider,
-		mqtt:              mqttClient,
-		mgwClient:         mgwClient,
+		config:                config,
+		topicDescProvider:     topicDescProvider,
+		mqtt:                  mqttClient,
+		mgwClient:             mgwClient,
+		eventTopicRegister:    NewMap[TopicDescription](),
+		responseTopicRegister: NewMap[TopicDescription](),
+		commandTopicRegister:  NewMap[TopicDescription](),
 	}
 	return result, result.start(ctx)
 }
@@ -116,47 +117,17 @@ func (this *Connector) startPeriodicalTopicRegistryUpdate(ctx context.Context) (
 	return nil
 }
 
-func (this *Connector) validateTopicDescriptions(topics []TopicDescription) error {
-	deviceToName := map[string]string{}
-	deviceToDeviceType := map[string]string{}
+func (this *Connector) splitTopicDescriptions(topics []TopicDescription) (events []TopicDescription, commands []TopicDescription, responses []TopicDescription) {
 	for _, topic := range topics {
-		event := topic.GetEventTopic()
-		cmd := topic.GetCmdTopic()
-		resp := topic.GetResponseTopic()
-		t := topic.GetTopic()
-		deviceId := topic.GetLocalDeviceId()
-		deviceName := topic.GetDeviceName()
-		deviceTypeId := topic.GetDeviceTypeId()
-		if t == "" || cmd == event || (cmd != "" && event != "") {
-			j, _ := json.Marshal(map[string]string{"t": t, "e": event, "c": cmd, "r": resp})
-			return errors.New("invalid topic description: expect either event or command topic: " + string(j))
+		if topic.GetEventTopic() != "" {
+			events = append(events, topic)
 		}
-		if known, exists := deviceToName[deviceId]; exists && known != deviceName {
-			return errors.New("device " + deviceId + " has multiple name assignments: " + known + " and " + deviceName)
-		} else {
-			deviceToName[deviceId] = deviceName
+		if topic.GetResponseTopic() != "" && topic.GetCmdTopic() != "" {
+			responses = append(responses, topic)
 		}
-		if known, exists := deviceToDeviceType[deviceId]; exists && known != deviceTypeId {
-			return errors.New("device " + deviceId + " has multiple device-type-id assignments: " + known + " and " + deviceTypeId)
-		} else {
-			deviceToDeviceType[deviceId] = deviceTypeId
-		}
-		if event != "" && resp != "" {
-			j, _ := json.Marshal(map[string]string{"t": t, "e": event, "c": cmd, "r": resp})
-			log.Println("WARNING: response topic will not be used if event topic is set", string(j))
+		if topic.GetCmdTopic() != "" {
+			commands = append(commands, topic)
 		}
 	}
-	return nil
-}
-
-func (this *Connector) EventHandler(topic string, payload []byte) {
-	//TODO
-}
-
-func (this *Connector) CommandHandler(deviceId string, serviceId string, command mgw.Command) {
-	//TODO
-}
-
-func (this *Connector) ResponseHandler(topic string, payload []byte) {
-	//TODO
+	return
 }

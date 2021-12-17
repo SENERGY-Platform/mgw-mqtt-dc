@@ -51,7 +51,6 @@ type MgwClient interface {
 
 type TopicDescription interface {
 	DeviceDescription
-	GetTopic() string
 	GetEventTopic() string
 	GetCmdTopic() string
 	GetResponseTopic() string
@@ -62,6 +61,26 @@ type DeviceDescription interface {
 	GetDeviceName() string
 	GetDeviceTypeId() string
 	GetLocalDeviceId() string
+}
+
+func EqualTopicDesc(old TopicDescription, topic TopicDescription) bool {
+	if EqualDeviceDesc(old, topic) &&
+		old.GetEventTopic() == topic.GetEventTopic() &&
+		old.GetResponseTopic() == topic.GetResponseTopic() &&
+		old.GetCmdTopic() == topic.GetCmdTopic() &&
+		old.GetLocalServiceId() == topic.GetLocalServiceId() {
+		return true
+	}
+	return false
+}
+
+func EqualDeviceDesc(old DeviceDescription, topic DeviceDescription) bool {
+	if old.GetDeviceName() == topic.GetDeviceName() &&
+		old.GetLocalDeviceId() == topic.GetLocalDeviceId() &&
+		old.GetDeviceTypeId() == topic.GetDeviceTypeId() {
+		return true
+	}
+	return false
 }
 
 type MqttClient interface {
@@ -113,6 +132,35 @@ func FMap3[I1 any, I2 any, I3 any, ResultType any, NewResultType any](f func(in1
 		result = c(temp)
 		return result, err
 	}
+}
+
+func ListFilter[T any](in []T, filter func(T) bool) (out []T) {
+	for _, e := range in {
+		if filter(e) {
+			out = append(out, e)
+		}
+	}
+	return
+}
+
+func ListContains[T any](list []T, check func(a T) bool) bool {
+	for _, e := range list {
+		if check(e) {
+			return true
+		}
+	}
+	return false
+}
+
+func ListFilterDuplicates[T any](s []T, equals func(a T, b T) bool) (out []T) {
+	for _, a := range s {
+		if !ListContains(out, func(b T) bool {
+			return equals(a, b)
+		}) {
+			out = append(out, a)
+		}
+	}
+	return
 }
 
 func TopicDescriptionsConverter[T TopicDescription](from []T) []TopicDescription {

@@ -40,6 +40,7 @@ func TestConnectorInit(t *testing.T) {
 			"c:a",
 			"e:foo",
 			"c:b",
+			"c:b",
 		}, nil
 	}), NewMgwFactory(newMgwMock), NewMqttFactory(newMqttMock))
 	fmt.Println(err, *temp)
@@ -89,7 +90,10 @@ func (this MockDesc) GetDeviceName() string {
 }
 
 func (this MockDesc) GetResponseTopic() string {
-	return "resp"
+	if strings.HasPrefix(string(this), "e:") {
+		return ""
+	}
+	return this.GetCmdTopic() + "/resp"
 }
 
 func (this MockDesc) GetDeviceTypeId() string {
