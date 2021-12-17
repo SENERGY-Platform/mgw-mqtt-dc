@@ -31,6 +31,10 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 		return duplicate
 	})
 
+	eventTopicUsed := map[string]bool{}
+	cmdTopicUsed := map[string]bool{}
+	cmdIdUsed := map[string]bool{}
+
 	deviceToName := map[string]string{}
 	deviceToDeviceType := map[string]string{}
 	for _, topic := range topics {
@@ -40,6 +44,7 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 		deviceId := topic.GetLocalDeviceId()
 		deviceName := topic.GetDeviceName()
 		deviceTypeId := topic.GetDeviceTypeId()
+		cmdId := getCommandIdFromDesc(topic)
 
 		//check for invalid element
 		if cmd == event || (cmd != "" && event != "") {
@@ -68,10 +73,30 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 		//TODO
 
 		//check for response topic reuse for commands
+		if cmd != "" {
+			cmdTopicUsed[cmd] = true
+		}
+		if resp != "" {
+			if exists := cmdTopicUsed[resp]; exists {
+				return errors.New("collision between command and response topic: " + resp)
+			}
+		}
 
-		//check for device-id + service-id reuse in commands-topics (a command topic can be used for mor than one service)
+		//check for device-id + service-id reuse in commands (a command topic can be used for mor than one service)
+		if cmd != "" {
+			if exists := cmdIdUsed[cmdId]; exists {
+				return errors.New("reused device-id/service-id: " + cmdId)
+			}
+			cmdIdUsed[cmdId] = true
+		}
 
 		//check for event topic reuse for other events --> error
+		if event != "" {
+			if exists := eventTopicUsed[event]; exists {
+				return errors.New("reused event topic: " + event)
+			}
+			eventTopicUsed[event] = true
+		}
 
 	}
 	return nil

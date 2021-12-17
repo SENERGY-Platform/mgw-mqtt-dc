@@ -101,7 +101,7 @@ func (this MockDesc) GetDeviceTypeId() string {
 }
 
 func (this MockDesc) GetLocalDeviceId() string {
-	return "dlid"
+	return string(this) + "_dlid"
 }
 
 func (this MockDesc) GetLocalServiceId() string {
