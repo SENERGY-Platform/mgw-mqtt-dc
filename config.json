@@ -1,0 +1,15 @@
+{
+    "connector_id": "mgw-mqtt-connector",
+    "mgw_mqtt_broker": "",
+    "mgw_mqtt_user": "",
+    "mgw_mqtt_pw": "",
+    "mgw_mqtt_client_id": "",
+    "debug": true,
+    "update_period": "10m",
+    "device_descriptions_dir": "",
+    "mqtt_pw": "",
+    "mqtt_user": "",
+    "mqtt_client_id": "",
+    "mqtt_broker": "",
+    "delete_devices": true
+}
