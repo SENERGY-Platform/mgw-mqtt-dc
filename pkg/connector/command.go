@@ -29,9 +29,39 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 			log.Println("WARNING: got command for unknown device description", cmdId)
 			return
 		}
+
+		this.storeCorrelationId(cmdId, command.CommandId)
+
 		err := this.mqtt.Publish(desc.GetCmdTopic(), 2, false, []byte(command.Data))
 		if err != nil {
 			log.Println("ERROR: unable to send event to mgw", err)
 		}
 	}()
+}
+
+func (this *Connector) storeCorrelationId(key string, correlationId string) {
+	this.correlationStore.Do(func(m *map[string][]string) {
+		l := (*m)[key]
+		l = append(l, correlationId)
+		(*m)[key] = l
+	})
+}
+
+func (this *Connector) popCorrelationId(key string) (correlationId string, exists bool) {
+	this.correlationStore.Do(func(m *map[string][]string) {
+		l, ok := (*m)[key]
+		if !ok {
+			exists = false
+			return
+		}
+		if len(l) > 0 {
+			exists = true
+			correlationId = l[0]
+			l = l[1:]
+			(*m)[key] = l
+		} else {
+			exists = false
+		}
+	})
+	return
 }

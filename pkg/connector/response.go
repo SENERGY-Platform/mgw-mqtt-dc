@@ -16,8 +16,34 @@
 
 package connector
 
+import (
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
+	"log"
+)
+
 func (this *Connector) ResponseHandler(topic string, payload []byte) {
-	//TODO
+	go func() {
+		desc, isRegistered := this.responseTopicRegister.Get(topic)
+		if !isRegistered {
+			log.Println("ERROR: handling of unregistered response topic", topic)
+			return
+		}
+		deviceId := desc.GetLocalDeviceId()
+		serviceId := desc.GetLocalServiceId()
+		cmdId := getCommandId(deviceId, serviceId)
+		correlationId, correlationExists := this.popCorrelationId(cmdId)
+		if !correlationExists {
+			log.Println("ERROR: no correlation id stored for response", topic, cmdId)
+			return
+		}
+		err := this.mgwClient.Respond(deviceId, serviceId, mgw.Command{
+			CommandId: correlationId,
+			Data:      string(payload),
+		})
+		if err != nil {
+			log.Println("ERROR: unable to send response", err)
+		}
+	}()
 }
 
 func (this *Connector) addResponse(topicDesc TopicDescription) (err error) {

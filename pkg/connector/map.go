@@ -19,50 +19,56 @@ package connector
 import "sync"
 
 type Map[T any] struct {
-	register map[string]T
-	mux      sync.Mutex
+	m   map[string]T
+	mux sync.Mutex
 }
 
 func NewMap[T any]() *Map[T] {
 	return &Map[T]{
-		register: map[string]T{},
+		m: map[string]T{},
 	}
 }
 
-func (this *Map[T]) Set(key string, desc T) {
+func (this *Map[T]) Do(f func(m *map[string]T)) {
 	this.mux.Lock()
 	defer this.mux.Unlock()
-	this.register[key] = desc
+	f(&this.m)
+}
+
+func (this *Map[T]) Set(key string, desc T) {
+	this.Do(func(m *map[string]T) {
+		(*m)[key] = desc
+	})
 }
 
 func (this *Map[T]) Remove(key string) {
-	this.mux.Lock()
-	defer this.mux.Unlock()
-	delete(this.register, key)
+	this.Do(func(m *map[string]T) {
+		delete(*m, key)
+	})
 }
 
 func (this *Map[T]) Get(key string) (desc T, ok bool) {
-	this.mux.Lock()
-	defer this.mux.Unlock()
-	desc, ok = this.register[key]
+	this.Do(func(m *map[string]T) {
+		desc, ok = (*m)[key]
+	})
 	return
 }
 
 func (this *Map[T]) GetKeys() (keys []string) {
-	this.mux.Lock()
-	defer this.mux.Unlock()
-	for topic, _ := range this.register {
-		keys = append(keys, topic)
-	}
+	this.Do(func(m *map[string]T) {
+		for topic, _ := range *m {
+			keys = append(keys, topic)
+		}
+	})
 	return
 }
 
 func (this *Map[T]) GetAll() (result map[string]T) {
 	result = map[string]T{}
-	this.mux.Lock()
-	defer this.mux.Unlock()
-	for key, value := range this.register {
-		result[key] = value
-	}
+	this.Do(func(m *map[string]T) {
+		for key, value := range *m {
+			result[key] = value
+		}
+	})
 	return
 }

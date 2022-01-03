@@ -39,6 +39,7 @@ type Connector struct {
 	eventTopicRegister    *Map[TopicDescription]
 	responseTopicRegister *Map[TopicDescription]
 	commandTopicRegister  *Map[TopicDescription]
+	correlationStore      *Map[[]string]
 }
 
 func New(ctx context.Context, config configuration.Config) (result *Connector, err error) {
@@ -66,6 +67,7 @@ func NewWithInterfaces(ctx context.Context, config configuration.Config, topicDe
 		eventTopicRegister:    NewMap[TopicDescription](),
 		responseTopicRegister: NewMap[TopicDescription](),
 		commandTopicRegister:  NewMap[TopicDescription](),
+		correlationStore:      NewMap[[]string](),
 	}
 	return result, result.start(ctx)
 }

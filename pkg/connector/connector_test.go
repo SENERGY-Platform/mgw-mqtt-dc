@@ -116,6 +116,11 @@ type MgwMock struct {
 	config configuration.Config
 }
 
+func (this *MgwMock) Respond(deviceId string, serviceId string, response mgw.Command) error {
+	log.Println("Respond", deviceId, serviceId, response)
+	return nil
+}
+
 func (this *MgwMock) StopListenToDeviceCommands(deviceId string) error {
 	log.Println("StopListenToDeviceCommands", deviceId)
 	return nil
