@@ -1,22 +1,13 @@
 #TODO
-# remove after release of go 1.18
-FROM golang:1.17 AS goenv
-RUN go install golang.org/dl/gotip@latest
-RUN gotip download
-
-
-#TODO
-# replace 'FROM goenv AS builder' with 'FROM golang:1.18 AS builder' after release of go 1.18
-FROM goenv AS builder
+#replace rc with stable tag
+FROM golang:1.18-rc AS builder
 
 COPY . /go/src/app
 WORKDIR /go/src/app
 
 ENV GO111MODULE=on
 
-#TODO
-# replace 'gotip' with 'go' on release of go 1.18
-RUN CGO_ENABLED=0 GOOS=linux gotip build -o app
+RUN CGO_ENABLED=0 GOOS=linux go build -o app
 
 RUN git log -1 --oneline > version.txt
 
