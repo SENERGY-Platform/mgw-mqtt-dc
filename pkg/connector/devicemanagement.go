@@ -46,7 +46,7 @@ func (this *Connector) updateTopics() (err error) {
 	oldEvents := this.eventTopicRegister.GetAll()
 	usedEvents := map[string]bool{}
 	for _, topic := range events {
-		usedEvents[topic.GetResponseTopic()] = true
+		usedEvents[topic.GetEventTopic()] = true
 		usedDevices[topic.GetLocalDeviceId()] = topic
 		if old, ok := this.eventTopicRegister.Get(topic.GetEventTopic()); !ok {
 			err = this.addEvent(topic)
@@ -59,7 +59,7 @@ func (this *Connector) updateTopics() (err error) {
 	}
 	for key, topic := range oldEvents {
 		oldDevices[topic.GetLocalDeviceId()] = topic
-		if _, notDeleted := usedEvents[key]; !notDeleted {
+		if _, used := usedEvents[key]; !used {
 			err = this.removeEvent(key)
 			if err != nil {
 				return err
@@ -126,22 +126,21 @@ func (this *Connector) updateTopics() (err error) {
 
 	//find new devices to add/update
 	for id, desc := range usedDevices {
-		if oldDesc, ok := oldDevices[id]; !ok {
+		err = this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), "")
+		if err != nil {
+			log.Println("ERROR: unable to send device info to mgw", err)
+			return err
+		}
+		if _, ok := oldDevices[id]; !ok {
 			if _, ok2 := addedDevices[id]; !ok2 {
 				addedDevices[id] = true
-				err := this.addDevice(desc)
+				err := this.addDeviceCommandListener(desc)
 				if err != nil {
 					return err
 				}
 			}
-		} else if !EqualDeviceDesc(oldDesc, desc) {
-			err := this.updateDevice(desc)
-			if err != nil {
-				return err
-			}
 		}
 	}
-
 	return nil
 }
 
@@ -153,11 +152,9 @@ func getCommandId(deviceId string, serviceId string) string {
 	return url.PathEscape(deviceId) + "/" + url.PathEscape(serviceId)
 }
 
-func (this *Connector) addDevice(device DeviceDescription) (err error) {
-	err = this.mgwClient.SetDevice(device.GetLocalDeviceId(), device.GetDeviceName(), device.GetDeviceTypeId(), "")
-	if err != nil {
-		log.Println("ERROR: unable to send device info to mgw", err)
-		return err
+func (this *Connector) addDeviceCommandListener(device DeviceDescription) (err error) {
+	if this.config.Debug {
+		log.Println("DEBUG: add device command listener", device)
 	}
 	err = this.mgwClient.ListenToDeviceCommands(device.GetLocalDeviceId(), this.CommandHandler)
 	if err != nil {
@@ -167,16 +164,10 @@ func (this *Connector) addDevice(device DeviceDescription) (err error) {
 	return nil
 }
 
-func (this *Connector) updateDevice(device DeviceDescription) (err error) {
-	err = this.mgwClient.SetDevice(device.GetLocalDeviceId(), device.GetDeviceName(), device.GetDeviceTypeId(), "")
-	if err != nil {
-		log.Println("ERROR: unable to send device info to mgw", err)
-		return err
-	}
-	return nil
-}
-
 func (this *Connector) removeDevice(device DeviceDescription) error {
+	if this.config.Debug {
+		log.Println("DEBUG: remove device", device)
+	}
 	id := device.GetLocalDeviceId()
 	if this.config.DeleteDevices {
 		log.Println("delete device", device.GetDeviceName(), id)

@@ -63,7 +63,7 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 		correlationStore:      util.NewSyncMap[[]string](),
 	}
 
-	result.mgwClient, err = mgwFactory(ctx, config, result.NotifyRefresh)
+	result.mgwClient, err = mgwFactory(ctx, config, result.RefreshDeviceInfo)
 	if err != nil {
 		return result, err
 	}
@@ -71,7 +71,7 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 	return result, result.start(ctx)
 }
 
-func (this *Connector) NotifyRefresh() {
+func (this *Connector) RefreshDeviceInfo() {
 	err := this.updateTopics()
 	if err != nil {
 		log.Println("ERROR: unable to update device registry after refresh notification:", err)
@@ -84,7 +84,7 @@ func (this *Connector) start(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	return this.updateTopics()
+	return nil
 }
 
 func (this *Connector) startPeriodicalTopicRegistryUpdate(ctx context.Context) (err error) {

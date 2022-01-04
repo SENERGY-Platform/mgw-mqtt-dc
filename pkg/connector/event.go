@@ -33,6 +33,9 @@ func (this *Connector) EventHandler(topic string, payload []byte) {
 }
 
 func (this *Connector) addEvent(topicDesc TopicDescription) (err error) {
+	if this.config.Debug {
+		log.Println("DEBUG: add event listener", topicDesc)
+	}
 	eventTopic := topicDesc.GetEventTopic()
 	err = this.mqtt.Subscribe(eventTopic, 2, this.EventHandler)
 	if err != nil {
@@ -43,6 +46,9 @@ func (this *Connector) addEvent(topicDesc TopicDescription) (err error) {
 }
 
 func (this *Connector) updateEvent(topic TopicDescription) error {
+	if this.config.Debug {
+		log.Println("DEBUG: update event listener", topic)
+	}
 	err := this.removeEvent(topic.GetEventTopic())
 	if err != nil {
 		return err
@@ -51,6 +57,9 @@ func (this *Connector) updateEvent(topic TopicDescription) error {
 }
 
 func (this *Connector) removeEvent(topic string) (err error) {
+	if this.config.Debug {
+		log.Println("DEBUG: remove event listener", topic)
+	}
 	desc, exists := this.eventTopicRegister.Get(topic)
 	if !exists {
 		return nil
