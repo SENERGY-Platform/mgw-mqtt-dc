@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package tests
+package integrationstest
 
 import (
 	"context"
 	"encoding/json"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/connector"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationstest/docker"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationstest/mocks"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mqtt"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/tests/docker"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/tests/mocks"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"reflect"
 	"sync"
@@ -159,11 +159,6 @@ func TestInitialDeviceInfo(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	mqttMessages.Do(func(m *map[string][]string) {
-		j, err := json.Marshal(*m)
-		t.Log(err, string(j))
-	})
-
 	deviceInfoMessages, ok := mqttMessages.Get(mgw.DeviceManagerTopic + "/" + conf.ConnectorId)
 	if !ok {
 		t.Error("missing device infos")
@@ -178,16 +173,44 @@ func TestInitialDeviceInfo(t *testing.T) {
 		return
 	})
 
-	expected := []mgw.DeviceInfoUpdate{}
+	expected := []mgw.DeviceInfoUpdate{
+		{
+			Method:   "set",
+			DeviceId: "1",
+			Data: mgw.DeviceInfo{
+				Name:       "d1",
+				DeviceType: "dt1",
+			},
+		},
+		{
+			Method:   "set",
+			DeviceId: "2",
+			Data: mgw.DeviceInfo{
+				Name:       "d2",
+				DeviceType: "dt1",
+			},
+		},
+		{
+			Method:   "set",
+			DeviceId: "3",
+			Data: mgw.DeviceInfo{
+				Name:       "d3",
+				DeviceType: "dt2",
+			},
+		},
+	}
+
+	compareDeviceInfo := func(a mgw.DeviceInfoUpdate, b mgw.DeviceInfoUpdate) bool {
+		return a.DeviceId < b.DeviceId || a.Method < b.Method
+	}
+	expected = util.ListSort(expected, compareDeviceInfo)
+	deviceInfos = util.ListSort(deviceInfos, compareDeviceInfo)
+
 	if !reflect.DeepEqual(deviceInfos, expected) {
 		a, _ := json.Marshal(deviceInfos)
 		e, _ := json.Marshal(expected)
 		t.Error(string(a), "\n", string(e))
 	}
-}
-
-func TestInitialDeviceInfoWithDelete(t *testing.T) {
-
 }
 
 func TestTimedDeviceInfoUpdate(t *testing.T) {

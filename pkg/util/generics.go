@@ -16,6 +16,8 @@
 
 package util
 
+import "sort"
+
 func ListMap[From any, To any](from []From, converter func(From) To) (to []To) {
 	if from != nil {
 		to = make([]To, len(from))
@@ -53,6 +55,14 @@ func ListFilterDuplicates[T any](s []T, equals func(a T, b T) bool) (out []T) {
 		}
 	}
 	return
+}
+
+func ListSort[T any](list []T, less func(a T, b T) bool) []T {
+	clone := append([]T{}, list...)
+	sort.Slice(clone, func(i, j int) bool {
+		return less(clone[i], clone[j])
+	})
+	return clone
 }
 
 func FMap1[I1 any, ResultType any, NewResultType any](f func(in I1) (ResultType, error), c func(ResultType) NewResultType) func(in I1) (NewResultType, error) {
