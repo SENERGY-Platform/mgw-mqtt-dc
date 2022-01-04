@@ -18,37 +18,42 @@ package mqtt
 
 import (
 	"context"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	paho "github.com/eclipse/paho.mqtt.golang"
 	"log"
 	"sync"
 )
 
-func New(ctx context.Context, config configuration.Config) (client *Mqtt, err error) {
+func New(ctx context.Context, brokerUrl string, clientId string, username string, password string) (client *Mqtt, err error) {
 	client = &Mqtt{
-		config:           config,
 		subscriptions:    map[string]paho.MessageHandler{},
 		subscriptionsMux: sync.Mutex{},
 		mqtt:             nil,
+		brokerUrl:        brokerUrl,
+		clientId:         clientId,
+		username:         username,
+		password:         password,
 	}
 	return client, client.init(ctx)
 }
 
 type Mqtt struct {
-	config           configuration.Config
 	subscriptions    map[string]paho.MessageHandler
 	subscriptionsMux sync.Mutex
 	mqtt             paho.Client
+	brokerUrl        string
+	clientId         string
+	username         string
+	password         string
 }
 
 func (this *Mqtt) init(ctx context.Context) error {
 	options := paho.NewClientOptions().
-		SetPassword(this.config.MqttPw).
-		SetUsername(this.config.MqttUser).
+		SetPassword(this.password).
+		SetUsername(this.username).
 		SetAutoReconnect(true).
 		SetCleanSession(true).
-		SetClientID(this.config.MqttClientId).
-		AddBroker(this.config.MqttBroker).
+		SetClientID(this.clientId).
+		AddBroker(this.brokerUrl).
 		SetResumeSubs(true).
 		SetConnectionLostHandler(func(_ paho.Client, err error) {
 			log.Println("connection to mqtt broker lost")

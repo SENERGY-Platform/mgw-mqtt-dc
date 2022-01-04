@@ -20,18 +20,8 @@ import (
 	"context"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 )
-
-//before refactoring:
-/*
-type MgwFactory func(ctx context.Context, config configuration.Config, refreshNotifier func()) (MgwClient, error)
-type TopicDescriptionProvider func(config configuration.Config) ([]TopicDescription, error)
-
-type GenericTopicDescriptionProvider[T TopicDescription] func(config configuration.Config) ([]T, error)
-type GenericMgwFactory[T MgwClient] func(ctx context.Context, config configuration.Config, refreshNotifier func()) (T, error)
-*/
-
-// after refactoring
 
 type GenericMgwFactory[T MgwClient] func(ctx context.Context, config configuration.Config, refreshNotifier func()) (T, error)
 type MgwFactory = GenericMgwFactory[MgwClient]
@@ -39,7 +29,7 @@ type MgwFactory = GenericMgwFactory[MgwClient]
 type GenericTopicDescriptionProvider[T TopicDescription] func(config configuration.Config) ([]T, error)
 type TopicDescriptionProvider = GenericTopicDescriptionProvider[TopicDescription]
 
-type GenericMqttFactory[T MqttClient] func(ctx context.Context, config configuration.Config) (T, error)
+type GenericMqttFactory[T MqttClient] func(ctx context.Context, brokerUrl string, clientId string, username string, password string) (T, error)
 type MqttFactory = GenericMqttFactory[MqttClient]
 
 type MgwClient interface {
@@ -91,92 +81,18 @@ type MqttClient interface {
 	Publish(topic string, qos byte, retained bool, payload []byte) error
 }
 
-//interface converters
-
-func ListMap[From any, To any](from []From, converter func(From) To) (to []To) {
-	if from != nil {
-		to = make([]To, len(from))
-	}
-	for i, e := range from {
-		to[i] = converter(e)
-	}
-	return
-}
-
-func FMap1[I1 any, ResultType any, NewResultType any](f func(in I1) (ResultType, error), c func(ResultType) NewResultType) func(in I1) (NewResultType, error) {
-	return func(in I1) (result NewResultType, err error) {
-		temp, err := f(in)
-		if err != nil {
-			return result, err
-		}
-		result = c(temp)
-		return result, err
-	}
-}
-
-func FMap2[I1 any, I2 any, ResultType any, NewResultType any](f func(in1 I1, in2 I2) (ResultType, error), c func(ResultType) NewResultType) func(in1 I1, in2 I2) (NewResultType, error) {
-	return func(in1 I1, in2 I2) (result NewResultType, err error) {
-		temp, err := f(in1, in2)
-		if err != nil {
-			return result, err
-		}
-		result = c(temp)
-		return result, err
-	}
-}
-
-func FMap3[I1 any, I2 any, I3 any, ResultType any, NewResultType any](f func(in1 I1, in2 I2, in3 I3) (ResultType, error), c func(ResultType) NewResultType) func(in1 I1, in2 I2, in3 I3) (NewResultType, error) {
-	return func(in1 I1, in2 I2, in3 I3) (result NewResultType, err error) {
-		temp, err := f(in1, in2, in3)
-		if err != nil {
-			return result, err
-		}
-		result = c(temp)
-		return result, err
-	}
-}
-
-func ListFilter[T any](in []T, filter func(T) bool) (out []T) {
-	for _, e := range in {
-		if filter(e) {
-			out = append(out, e)
-		}
-	}
-	return
-}
-
-func ListContains[T any](list []T, check func(a T) bool) bool {
-	for _, e := range list {
-		if check(e) {
-			return true
-		}
-	}
-	return false
-}
-
-func ListFilterDuplicates[T any](s []T, equals func(a T, b T) bool) (out []T) {
-	for _, a := range s {
-		if !ListContains(out, func(b T) bool {
-			return equals(a, b)
-		}) {
-			out = append(out, a)
-		}
-	}
-	return
-}
-
 func TopicDescriptionsConverter[T TopicDescription](from []T) []TopicDescription {
-	return ListMap(from, func(element T) TopicDescription { return element })
+	return util.ListMap(from, func(element T) TopicDescription { return element })
 }
 
 func NewTopicDescriptionProvider[T TopicDescription](f GenericTopicDescriptionProvider[T]) (result TopicDescriptionProvider) {
-	return FMap1(f, TopicDescriptionsConverter[T])
+	return util.FMap1(f, TopicDescriptionsConverter[T])
 }
 
 func NewMgwFactory[MgwClientType MgwClient](f GenericMgwFactory[MgwClientType]) (result MgwFactory) {
-	return FMap3(f, func(element MgwClientType) MgwClient { return element })
+	return util.FMap3(f, func(element MgwClientType) MgwClient { return element })
 }
 
 func NewMqttFactory[MqttClientType MqttClient](f GenericMqttFactory[MqttClientType]) (result MqttFactory) {
-	return FMap2(f, func(element MqttClientType) MqttClient { return element })
+	return util.FMap5(f, func(element MqttClientType) MqttClient { return element })
 }

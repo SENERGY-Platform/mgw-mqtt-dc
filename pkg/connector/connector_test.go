@@ -146,7 +146,7 @@ func (this *MgwMock) SendEvent(deviceId string, serviceId string, value []byte) 
 	return nil
 }
 
-func newMqttMock(ctx context.Context, config configuration.Config) (MqttMock, error) {
+func newMqttMock(ctx context.Context, brokerUrl string, clientId string, username string, password string) (MqttMock, error) {
 	return MqttMock{}, nil
 }
 

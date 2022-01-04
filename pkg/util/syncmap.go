@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 InfAI (CC SES)
+ * Copyright 2022 InfAI (CC SES)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,47 +14,54 @@
  * limitations under the License.
  */
 
-package connector
+package util
 
 import "sync"
 
-type Map[T any] struct {
+type SyncMap[T any] struct {
 	m   map[string]T
 	mux sync.Mutex
 }
 
-func NewMap[T any]() *Map[T] {
-	return &Map[T]{
+func NewSyncMap[T any]() *SyncMap[T] {
+	return &SyncMap[T]{
 		m: map[string]T{},
 	}
 }
 
-func (this *Map[T]) Do(f func(m *map[string]T)) {
+func (this *SyncMap[T]) Do(f func(m *map[string]T)) {
 	this.mux.Lock()
 	defer this.mux.Unlock()
 	f(&this.m)
 }
 
-func (this *Map[T]) Set(key string, desc T) {
+func (this *SyncMap[T]) Update(key string, update func(value T) T) {
 	this.Do(func(m *map[string]T) {
-		(*m)[key] = desc
+		v := (*m)[key]
+		(*m)[key] = update(v)
 	})
 }
 
-func (this *Map[T]) Remove(key string) {
+func (this *SyncMap[T]) Set(key string, value T) {
+	this.Do(func(m *map[string]T) {
+		(*m)[key] = value
+	})
+}
+
+func (this *SyncMap[T]) Remove(key string) {
 	this.Do(func(m *map[string]T) {
 		delete(*m, key)
 	})
 }
 
-func (this *Map[T]) Get(key string) (desc T, ok bool) {
+func (this *SyncMap[T]) Get(key string) (value T, ok bool) {
 	this.Do(func(m *map[string]T) {
-		desc, ok = (*m)[key]
+		value, ok = (*m)[key]
 	})
 	return
 }
 
-func (this *Map[T]) GetKeys() (keys []string) {
+func (this *SyncMap[T]) GetKeys() (keys []string) {
 	this.Do(func(m *map[string]T) {
 		for topic, _ := range *m {
 			keys = append(keys, topic)
@@ -63,7 +70,7 @@ func (this *Map[T]) GetKeys() (keys []string) {
 	return
 }
 
-func (this *Map[T]) GetAll() (result map[string]T) {
+func (this *SyncMap[T]) GetAll() (result map[string]T) {
 	result = map[string]T{}
 	this.Do(func(m *map[string]T) {
 		for key, value := range *m {

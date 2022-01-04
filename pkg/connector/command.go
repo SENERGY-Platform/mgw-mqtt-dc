@@ -40,10 +40,8 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 }
 
 func (this *Connector) storeCorrelationId(key string, correlationId string) {
-	this.correlationStore.Do(func(m *map[string][]string) {
-		l := (*m)[key]
-		l = append(l, correlationId)
-		(*m)[key] = l
+	this.correlationStore.Update(key, func(l []string) []string {
+		return append(l, correlationId)
 	})
 }
 

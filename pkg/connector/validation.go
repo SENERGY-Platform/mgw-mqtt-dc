@@ -19,11 +19,12 @@ package connector
 import (
 	"encoding/json"
 	"errors"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"log"
 )
 
 func (this *Connector) validateTopicDescriptions(topics []TopicDescription) error {
-	topics = ListFilterDuplicates(topics, func(a TopicDescription, b TopicDescription) bool {
+	topics = util.ListFilterDuplicates(topics, func(a TopicDescription, b TopicDescription) bool {
 		duplicate := EqualTopicDesc(a, b)
 		if duplicate {
 			log.Println("WARNING: found duplicate topic description:", descToStr(a))

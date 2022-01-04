@@ -22,6 +22,7 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mqtt"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"log"
 	"runtime/debug"
 	"sync"
@@ -36,10 +37,10 @@ type Connector struct {
 	topicDescProvider     TopicDescriptionProvider
 	mqtt                  MqttClient
 	updateTopicsMux       sync.Mutex
-	eventTopicRegister    *Map[TopicDescription]
-	responseTopicRegister *Map[TopicDescription]
-	commandTopicRegister  *Map[TopicDescription]
-	correlationStore      *Map[[]string]
+	eventTopicRegister    *util.SyncMap[TopicDescription]
+	responseTopicRegister *util.SyncMap[TopicDescription]
+	commandTopicRegister  *util.SyncMap[TopicDescription]
+	correlationStore      *util.SyncMap[[]string]
 }
 
 func New(ctx context.Context, config configuration.Config) (result *Connector, err error) {
@@ -47,28 +48,26 @@ func New(ctx context.Context, config configuration.Config) (result *Connector, e
 }
 
 func NewWithFactories(ctx context.Context, config configuration.Config, topicDescProvider TopicDescriptionProvider, mgwFactory MgwFactory, mqttFactory MqttFactory) (result *Connector, err error) {
-	mqttClient, err := mqttFactory(ctx, config)
+	mqttClient, err := mqttFactory(ctx, config.MqttBroker, config.MqttClientId, config.MqttUser, config.MqttPw)
 	if err != nil {
 		return result, err
 	}
-	mgwClient, err := mgwFactory(ctx, config, result.NotifyRefresh)
-	if err != nil {
-		return result, err
-	}
-	return NewWithInterfaces(ctx, config, topicDescProvider, mgwClient, mqttClient)
-}
 
-func NewWithInterfaces(ctx context.Context, config configuration.Config, topicDescProvider TopicDescriptionProvider, mgwClient MgwClient, mqttClient MqttClient) (result *Connector, err error) {
 	result = &Connector{
 		config:                config,
 		topicDescProvider:     topicDescProvider,
 		mqtt:                  mqttClient,
-		mgwClient:             mgwClient,
-		eventTopicRegister:    NewMap[TopicDescription](),
-		responseTopicRegister: NewMap[TopicDescription](),
-		commandTopicRegister:  NewMap[TopicDescription](),
-		correlationStore:      NewMap[[]string](),
+		eventTopicRegister:    util.NewSyncMap[TopicDescription](),
+		responseTopicRegister: util.NewSyncMap[TopicDescription](),
+		commandTopicRegister:  util.NewSyncMap[TopicDescription](),
+		correlationStore:      util.NewSyncMap[[]string](),
 	}
+
+	result.mgwClient, err = mgwFactory(ctx, config, result.NotifyRefresh)
+	if err != nil {
+		return result, err
+	}
+
 	return result, result.start(ctx)
 }
 
