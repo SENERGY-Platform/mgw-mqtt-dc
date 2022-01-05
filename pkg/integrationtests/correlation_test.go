@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-package integrationstest
+package integrationtests
 
 //TODO

@@ -14,24 +14,27 @@
  * limitations under the License.
  */
 
-package integrationstest
+package integrationtests
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/connector"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationstest/docker"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationstest/mocks"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationtests/docker"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationtests/mocks"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mqtt"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"reflect"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 )
 
-func TestEventForwarding(t *testing.T) {
+func TestCommandForwarding(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -66,20 +69,30 @@ func TestEventForwarding(t *testing.T) {
 		DeleteDevices:         false,
 	}
 
-	mqttPublisher, err := mqtt.New(ctx, conf.MqttBroker, "testpublisher", "", "")
+	mqttClient, err := mqtt.New(ctx, conf.MqttBroker, "testpublisher", "", "")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	mqttMessages := util.NewSyncMap[[]string]()
+	err = mqttClient.Subscribe("#", 2, func(topic string, payload []byte) {
+		mqttMessages.Update(topic, func(messages []string) []string {
+			return append(messages, string(payload))
+		})
+	})
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	mgwListener, err := mqtt.New(ctx, conf.MgwMqttBroker, "testlistener", "", "")
+	mgwMqttClient, err := mqtt.New(ctx, conf.MgwMqttBroker, "testlistener", "", "")
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	mgwMessages := util.NewSyncMap[[]string]()
-	err = mgwListener.Subscribe("#", 2, func(topic string, payload []byte) {
-		if topic != "device-manager/device/test" {
+	err = mgwMqttClient.Subscribe("#", 2, func(topic string, payload []byte) {
+		if topic != "device-manager/device/test" && !strings.HasPrefix(topic, "command/") && !strings.HasPrefix(topic, "event/") {
 			mgwMessages.Update(topic, func(messages []string) []string {
 				return append(messages, string(payload))
 			})
@@ -175,13 +188,28 @@ func TestEventForwarding(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 
-	expected := map[string][]string{}
-	for _, desc := range topicDescriptions {
-		if desc.EventTopic != "" {
-			topic := "event/" + desc.DeviceId + "/" + desc.ServiceId
-			msg := "event:" + desc.EventTopic
-			expected[topic] = append(expected[topic], msg)
-			err = mqttPublisher.Publish(desc.EventTopic, 2, false, []byte(msg))
+	expectedMqttMsg := map[string][]string{}
+	expectedMgwMsg := map[string][]string{}
+	for i, desc := range topicDescriptions {
+		if desc.CmdTopic != "" {
+			cmdObj := mgw.Command{
+				CommandId: "cmd:" + desc.CmdTopic + "_" + strconv.Itoa(i),
+				Data:      "cmd:" + desc.CmdTopic,
+			}
+			cmdMsg, _ := json.Marshal(cmdObj)
+			cmdTopic := "command/" + desc.DeviceId + "/" + desc.ServiceId
+			expectedMqttMsg[desc.CmdTopic] = append(expectedMqttMsg[desc.CmdTopic], cmdObj.Data)
+			respTopic := "response/" + desc.DeviceId + "/" + desc.ServiceId
+			respObj := mgw.Command{
+				CommandId: cmdObj.CommandId,
+				Data:      "",
+			}
+			if desc.RespTopic != "" {
+				respObj.Data = "resp:" + desc.RespTopic
+			}
+			respMsg, _ := json.Marshal(respObj)
+			expectedMgwMsg[respTopic] = append(expectedMgwMsg[respTopic], string(respMsg))
+			err = mgwMqttClient.Publish(cmdTopic, 2, false, cmdMsg)
 			if err != nil {
 				t.Error(err)
 				return
@@ -190,11 +218,27 @@ func TestEventForwarding(t *testing.T) {
 	}
 
 	time.Sleep(2 * time.Second)
+	for _, desc := range topicDescriptions {
+		if desc.CmdTopic != "" && desc.RespTopic != "" {
+			respMsg := "resp:" + desc.RespTopic
+			expectedMqttMsg[desc.RespTopic] = append(expectedMqttMsg[desc.RespTopic], respMsg)
+			err = mqttClient.Publish(desc.RespTopic, 2, false, []byte(respMsg))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		}
+	}
+	time.Sleep(2 * time.Second)
 
-	mgwMessages.Do(func(m *map[string][]string) {
-		if !reflect.DeepEqual(*m, expected) {
-			t.Error("\n", *m, "\n", expected)
+	mqttMessages.Do(func(m *map[string][]string) {
+		if !reflect.DeepEqual(*m, expectedMqttMsg) {
+			t.Error("\n", *m, "\n", expectedMqttMsg)
 		}
 	})
-
+	mgwMessages.Do(func(m *map[string][]string) {
+		if !reflect.DeepEqual(*m, expectedMgwMsg) {
+			t.Error("\n", *m, "\n", expectedMgwMsg)
+		}
+	})
 }

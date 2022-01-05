@@ -18,6 +18,7 @@ package connector
 
 import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"log"
 )
 
@@ -30,18 +31,41 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 			return
 		}
 
-		this.storeCorrelationId(cmdId, command.CommandId)
+		expectsDeviceResponse := desc.GetResponseTopic() != ""
+		if expectsDeviceResponse {
+			this.storeCorrelationId(cmdId, command.CommandId)
+		}
 
 		err := this.commandMqttClient.Publish(desc.GetCmdTopic(), 2, false, []byte(command.Data))
 		if err != nil {
-			log.Println("ERROR: unable to send event to mgw", err)
+			log.Println("ERROR: unable to send command to mgw", err)
+			this.removeCorrelationId(cmdId, command.CommandId)
+		}
+
+		if !expectsDeviceResponse {
+			err = this.mgwClient.Respond(deviceId, serviceId, mgw.Command{
+				CommandId: command.CommandId,
+				Data:      "",
+			})
+			if err != nil {
+				log.Println("ERROR: unable to send empty response", err)
+			}
 		}
 	}()
 }
 
 func (this *Connector) storeCorrelationId(key string, correlationId string) {
+	//TODO remove correlation ids to old to be used
 	this.correlationStore.Update(key, func(l []string) []string {
 		return append(l, correlationId)
+	})
+}
+
+func (this *Connector) removeCorrelationId(key string, correlationId string) {
+	this.correlationStore.Update(key, func(l []string) []string {
+		return util.ListFilter(l, func(value string) bool {
+			return value != correlationId
+		})
 	})
 }
 

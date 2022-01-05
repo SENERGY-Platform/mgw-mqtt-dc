@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package integrationstest
+package integrationtests
 
 import (
 	"context"
 	"encoding/json"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/connector"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationstest/docker"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationstest/mocks"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationtests/docker"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationtests/mocks"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mqtt"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
