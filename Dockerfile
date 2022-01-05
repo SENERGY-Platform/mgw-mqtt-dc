@@ -10,6 +10,7 @@ ENV GO111MODULE=on
 RUN CGO_ENABLED=0 GOOS=linux go build -o app
 
 RUN git log -1 --oneline > version.txt
+RUN go version -m app >> version.txt
 
 FROM alpine:latest
 WORKDIR /root/
