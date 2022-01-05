@@ -60,8 +60,7 @@ type CorrelationId struct {
 	date time.Time
 }
 
-func (this *Connector) storeCorrelationId(key string, correlationId string) {
-	//remove old correlation ids
+func (this *Connector) removeOldCorrelationIds(key string) {
 	this.correlationStore.Update(key, func(l []CorrelationId) []CorrelationId {
 		return util.ListFilter(l, func(value CorrelationId) bool {
 			toOld := time.Since(value.date) > this.MaxCorrelationIdAge
@@ -71,13 +70,17 @@ func (this *Connector) storeCorrelationId(key string, correlationId string) {
 			return !toOld
 		})
 	})
-	//add new id
+}
+
+func (this *Connector) storeCorrelationId(key string, correlationId string) {
+	this.removeOldCorrelationIds(key)
 	this.correlationStore.Update(key, func(l []CorrelationId) []CorrelationId {
 		return append(l, CorrelationId{id: correlationId, date: time.Now()})
 	})
 }
 
 func (this *Connector) removeCorrelationId(key string, correlationId string) {
+	this.removeOldCorrelationIds(key)
 	this.correlationStore.Update(key, func(l []CorrelationId) []CorrelationId {
 		return util.ListFilter(l, func(value CorrelationId) bool {
 			return value.id != correlationId
@@ -86,6 +89,7 @@ func (this *Connector) removeCorrelationId(key string, correlationId string) {
 }
 
 func (this *Connector) popCorrelationId(key string) (correlationId string, exists bool) {
+	this.removeOldCorrelationIds(key)
 	this.correlationStore.Do(func(m *map[string][]CorrelationId) {
 		l, ok := (*m)[key]
 		if !ok {
