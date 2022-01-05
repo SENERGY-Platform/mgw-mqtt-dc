@@ -32,7 +32,7 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 
 		this.storeCorrelationId(cmdId, command.CommandId)
 
-		err := this.mqtt.Publish(desc.GetCmdTopic(), 2, false, []byte(command.Data))
+		err := this.commandMqttClient.Publish(desc.GetCmdTopic(), 2, false, []byte(command.Data))
 		if err != nil {
 			log.Println("ERROR: unable to send event to mgw", err)
 		}

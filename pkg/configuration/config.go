@@ -38,7 +38,8 @@ type Config struct {
 	DeviceDescriptionsDir string `json:"device_descriptions_dir"`
 	MqttPw                string `json:"mqtt_pw"`
 	MqttUser              string `json:"mqtt_user"`
-	MqttClientId          string `json:"mqtt_client_id"`
+	MqttEventClientId     string `json:"mqtt_event_client_id"`
+	MqttCmdClientId       string `json:"mqtt_cmd_client_id"`
 	MqttBroker            string `json:"mqtt_broker"`
 	DeleteDevices         bool   `json:"delete_devices"`
 }

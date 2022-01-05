@@ -25,7 +25,6 @@ func (this *Connector) ResponseHandler(topic string, payload []byte) {
 	go func() {
 		desc, isRegistered := this.responseTopicRegister.Get(topic)
 		if !isRegistered {
-			log.Println("ERROR: handling of unregistered response topic", topic)
 			return
 		}
 		deviceId := desc.GetLocalDeviceId()
@@ -33,7 +32,9 @@ func (this *Connector) ResponseHandler(topic string, payload []byte) {
 		cmdId := getCommandId(deviceId, serviceId)
 		correlationId, correlationExists := this.popCorrelationId(cmdId)
 		if !correlationExists {
-			log.Println("ERROR: no correlation id stored for response", topic, cmdId)
+			if this.config.Debug {
+				log.Println("DEBUG: no correlation id stored for response", topic, cmdId)
+			}
 			return
 		}
 		err := this.mgwClient.Respond(deviceId, serviceId, mgw.Command{
@@ -47,8 +48,11 @@ func (this *Connector) ResponseHandler(topic string, payload []byte) {
 }
 
 func (this *Connector) addResponse(topicDesc TopicDescription) (err error) {
+	if this.config.Debug {
+		log.Println("DEBUG: add response listener", topicDesc)
+	}
 	responseTopic := topicDesc.GetResponseTopic()
-	err = this.mqtt.Subscribe(responseTopic, 2, this.ResponseHandler)
+	err = this.commandMqttClient.Subscribe(responseTopic, 2, this.ResponseHandler)
 	if err != nil {
 		return err
 	}
@@ -57,6 +61,9 @@ func (this *Connector) addResponse(topicDesc TopicDescription) (err error) {
 }
 
 func (this *Connector) updateResponse(topic TopicDescription) error {
+	if this.config.Debug {
+		log.Println("DEBUG: update response listener", topic)
+	}
 	err := this.removeResponse(topic.GetResponseTopic())
 	if err != nil {
 		return err
@@ -65,11 +72,14 @@ func (this *Connector) updateResponse(topic TopicDescription) error {
 }
 
 func (this *Connector) removeResponse(topic string) (err error) {
+	if this.config.Debug {
+		log.Println("DEBUG: remove response listener", topic)
+	}
 	desc, exists := this.responseTopicRegister.Get(topic)
 	if !exists {
 		return nil
 	}
-	err = this.mqtt.Unsubscribe(desc.GetResponseTopic())
+	err = this.commandMqttClient.Unsubscribe(desc.GetResponseTopic())
 	if err != nil {
 		return err
 	}

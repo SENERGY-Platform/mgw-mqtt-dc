@@ -22,7 +22,6 @@ func (this *Connector) EventHandler(topic string, payload []byte) {
 	go func() {
 		desc, ok := this.eventTopicRegister.Get(topic)
 		if !ok {
-			log.Println("WARNING: got event for unknown topic description", topic)
 			return
 		}
 		err := this.mgwClient.SendEvent(desc.GetLocalDeviceId(), desc.GetLocalServiceId(), payload)
@@ -37,7 +36,7 @@ func (this *Connector) addEvent(topicDesc TopicDescription) (err error) {
 		log.Println("DEBUG: add event listener", topicDesc)
 	}
 	eventTopic := topicDesc.GetEventTopic()
-	err = this.mqtt.Subscribe(eventTopic, 2, this.EventHandler)
+	err = this.eventMqttClient.Subscribe(eventTopic, 2, this.EventHandler)
 	if err != nil {
 		return err
 	}
@@ -64,7 +63,8 @@ func (this *Connector) removeEvent(topic string) (err error) {
 	if !exists {
 		return nil
 	}
-	err = this.mqtt.Unsubscribe(desc.GetEventTopic())
+	//TODO: unsub only if last no resp sub
+	err = this.eventMqttClient.Unsubscribe(desc.GetEventTopic())
 	if err != nil {
 		return err
 	}

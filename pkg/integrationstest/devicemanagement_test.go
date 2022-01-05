@@ -55,7 +55,8 @@ func TestInitialDeviceInfo(t *testing.T) {
 		DeviceDescriptionsDir: "",
 		MqttPw:                "",
 		MqttUser:              "",
-		MqttClientId:          "mqttclientid",
+		MqttCmdClientId:       "mqttcmdclientid",
+		MqttEventClientId:     "mqtteventclientid",
 		MqttBroker:            "tcp://localhost:" + mqttPort,
 		DeleteDevices:         false,
 	}
@@ -236,7 +237,8 @@ func TestTimedDeviceInfoUpdate(t *testing.T) {
 		DeviceDescriptionsDir: "",
 		MqttPw:                "",
 		MqttUser:              "",
-		MqttClientId:          "mqttclientid",
+		MqttCmdClientId:       "mqttcmdclientid",
+		MqttEventClientId:     "mqtteventclientid",
 		MqttBroker:            "tcp://localhost:" + mqttPort,
 		DeleteDevices:         false,
 	}
@@ -470,7 +472,8 @@ func TestTimedDeviceInfoUpdateWithDelete(t *testing.T) {
 		DeviceDescriptionsDir: "",
 		MqttPw:                "",
 		MqttUser:              "",
-		MqttClientId:          "mqttclientid",
+		MqttCmdClientId:       "mqttcmdclientid",
+		MqttEventClientId:     "mqtteventclientid",
 		MqttBroker:            "tcp://localhost:" + mqttPort,
 		DeleteDevices:         true,
 	}
@@ -699,7 +702,8 @@ func TestSignaledDeviceInfoUpdate(t *testing.T) {
 		DeviceDescriptionsDir: "",
 		MqttPw:                "",
 		MqttUser:              "",
-		MqttClientId:          "mqttclientid",
+		MqttCmdClientId:       "mqttcmdclientid",
+		MqttEventClientId:     "mqtteventclientid",
 		MqttBroker:            "tcp://localhost:" + mqttPort,
 		DeleteDevices:         false,
 	}
@@ -932,7 +936,8 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 		DeviceDescriptionsDir: "",
 		MqttPw:                "",
 		MqttUser:              "",
-		MqttClientId:          "mqttclientid",
+		MqttCmdClientId:       "mqttcmdclientid",
+		MqttEventClientId:     "mqtteventclientid",
 		MqttBroker:            "tcp://localhost:" + mqttPort,
 		DeleteDevices:         true,
 	}
@@ -1137,6 +1142,10 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 	compareDeviceInfo := func(a mgw.DeviceInfoUpdate, b mgw.DeviceInfoUpdate) bool {
 		return a.DeviceId < b.DeviceId || a.Method < b.Method
 	}
+
+	expected = util.ListSort(expected, compareDeviceInfo)
+	deviceInfos = util.ListSort(deviceInfos, compareDeviceInfo)
+
 	expected = util.ListSort(expected, compareDeviceInfo)
 	deviceInfos = util.ListSort(deviceInfos, compareDeviceInfo)
 

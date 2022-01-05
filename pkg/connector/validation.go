@@ -99,6 +99,9 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 			eventTopicUsed[event] = true
 		}
 
+		//TODO
+		//WARN if event and response topic collide (is ok but warning wuld be nice)
+
 	}
 	return nil
 }

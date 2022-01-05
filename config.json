@@ -9,7 +9,8 @@
     "device_descriptions_dir": "",
     "mqtt_pw": "",
     "mqtt_user": "",
-    "mqtt_client_id": "",
+    "mqtt_event_client_id": "",
+    "mqtt_cmd_client_id": "",
     "mqtt_broker": "",
     "delete_devices": true
 }

@@ -35,7 +35,8 @@ type Connector struct {
 	updateTickerDuration  time.Duration
 	updateTicker          *time.Ticker
 	topicDescProvider     TopicDescriptionProvider
-	mqtt                  MqttClient
+	commandMqttClient     MqttClient
+	eventMqttClient       MqttClient
 	updateTopicsMux       sync.Mutex
 	eventTopicRegister    *util.SyncMap[TopicDescription]
 	responseTopicRegister *util.SyncMap[TopicDescription]
@@ -48,7 +49,12 @@ func New(ctx context.Context, config configuration.Config) (result *Connector, e
 }
 
 func NewWithFactories(ctx context.Context, config configuration.Config, topicDescProvider TopicDescriptionProvider, mgwFactory MgwFactory, mqttFactory MqttFactory) (result *Connector, err error) {
-	mqttClient, err := mqttFactory(ctx, config.MqttBroker, config.MqttClientId, config.MqttUser, config.MqttPw)
+	commandMqttClient, err := mqttFactory(ctx, config.MqttBroker, config.MqttCmdClientId, config.MqttUser, config.MqttPw)
+	if err != nil {
+		return result, err
+	}
+
+	eventMqttClient, err := mqttFactory(ctx, config.MqttBroker, config.MqttEventClientId, config.MqttUser, config.MqttPw)
 	if err != nil {
 		return result, err
 	}
@@ -56,7 +62,8 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 	result = &Connector{
 		config:                config,
 		topicDescProvider:     topicDescProvider,
-		mqtt:                  mqttClient,
+		commandMqttClient:     commandMqttClient,
+		eventMqttClient:       eventMqttClient,
 		eventTopicRegister:    util.NewSyncMap[TopicDescription](),
 		responseTopicRegister: util.NewSyncMap[TopicDescription](),
 		commandTopicRegister:  util.NewSyncMap[TopicDescription](),
