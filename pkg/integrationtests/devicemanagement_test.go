@@ -59,6 +59,7 @@ func TestInitialDeviceInfo(t *testing.T) {
 		MqttEventClientId:     "mqtteventclientid",
 		MqttBroker:            "tcp://localhost:" + mqttPort,
 		DeleteDevices:         false,
+		MaxCorrelationIdAge:   "1m",
 	}
 
 	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "")
@@ -241,6 +242,7 @@ func TestTimedDeviceInfoUpdate(t *testing.T) {
 		MqttEventClientId:     "mqtteventclientid",
 		MqttBroker:            "tcp://localhost:" + mqttPort,
 		DeleteDevices:         false,
+		MaxCorrelationIdAge:   "1m",
 	}
 
 	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "")
@@ -476,6 +478,7 @@ func TestTimedDeviceInfoUpdateWithDelete(t *testing.T) {
 		MqttEventClientId:     "mqtteventclientid",
 		MqttBroker:            "tcp://localhost:" + mqttPort,
 		DeleteDevices:         true,
+		MaxCorrelationIdAge:   "1m",
 	}
 
 	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "")
@@ -706,6 +709,7 @@ func TestSignaledDeviceInfoUpdate(t *testing.T) {
 		MqttEventClientId:     "mqtteventclientid",
 		MqttBroker:            "tcp://localhost:" + mqttPort,
 		DeleteDevices:         false,
+		MaxCorrelationIdAge:   "1m",
 	}
 
 	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "")
@@ -940,6 +944,7 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 		MqttEventClientId:     "mqtteventclientid",
 		MqttBroker:            "tcp://localhost:" + mqttPort,
 		DeleteDevices:         true,
+		MaxCorrelationIdAge:   "1m",
 	}
 
 	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "")

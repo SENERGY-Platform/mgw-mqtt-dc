@@ -12,5 +12,6 @@
     "mqtt_event_client_id": "",
     "mqtt_cmd_client_id": "",
     "mqtt_broker": "",
-    "delete_devices": true
+    "delete_devices": true,
+    "max_correlation_id_age": "1m"
 }

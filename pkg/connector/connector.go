@@ -41,7 +41,8 @@ type Connector struct {
 	eventTopicRegister    *util.SyncMap[TopicDescription]
 	responseTopicRegister *util.SyncMap[TopicDescription]
 	commandTopicRegister  *util.SyncMap[TopicDescription]
-	correlationStore      *util.SyncMap[[]string]
+	correlationStore      *util.SyncMap[[]CorrelationId]
+	MaxCorrelationIdAge   time.Duration
 }
 
 func New(ctx context.Context, config configuration.Config) (result *Connector, err error) {
@@ -67,9 +68,14 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 		eventTopicRegister:    util.NewSyncMap[TopicDescription](),
 		responseTopicRegister: util.NewSyncMap[TopicDescription](),
 		commandTopicRegister:  util.NewSyncMap[TopicDescription](),
-		correlationStore:      util.NewSyncMap[[]string](),
+		correlationStore:      util.NewSyncMap[[]CorrelationId](),
 	}
 
+	result.MaxCorrelationIdAge, err = time.ParseDuration(config.MaxCorrelationIdAge)
+	if err != nil {
+		return result, err
+	}
+	
 	result.mgwClient, err = mgwFactory(ctx, config, result.RefreshDeviceInfo)
 	if err != nil {
 		return result, err

@@ -64,6 +64,7 @@ func TestEventForwarding(t *testing.T) {
 		MqttEventClientId:     "mqtteventclientid",
 		MqttBroker:            "tcp://localhost:" + mqttPort,
 		DeleteDevices:         false,
+		MaxCorrelationIdAge:   "1m",
 	}
 
 	mqttPublisher, err := mqtt.New(ctx, conf.MqttBroker, "testpublisher", "", "")

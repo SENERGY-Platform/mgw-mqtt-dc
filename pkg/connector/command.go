@@ -20,6 +20,7 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"log"
+	"time"
 )
 
 func (this *Connector) CommandHandler(deviceId string, serviceId string, command mgw.Command) {
@@ -54,23 +55,38 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 	}()
 }
 
+type CorrelationId struct {
+	id   string
+	date time.Time
+}
+
 func (this *Connector) storeCorrelationId(key string, correlationId string) {
-	//TODO remove correlation ids to old to be used
-	this.correlationStore.Update(key, func(l []string) []string {
-		return append(l, correlationId)
+	//remove old correlation ids
+	this.correlationStore.Update(key, func(l []CorrelationId) []CorrelationId {
+		return util.ListFilter(l, func(value CorrelationId) bool {
+			toOld := time.Since(value.date) > this.MaxCorrelationIdAge
+			if toOld {
+				log.Println("WARNING: drop correlation id because its older than MaxCorrelationIdAge", value.id, value.date.String())
+			}
+			return !toOld
+		})
+	})
+	//add new id
+	this.correlationStore.Update(key, func(l []CorrelationId) []CorrelationId {
+		return append(l, CorrelationId{id: correlationId, date: time.Now()})
 	})
 }
 
 func (this *Connector) removeCorrelationId(key string, correlationId string) {
-	this.correlationStore.Update(key, func(l []string) []string {
-		return util.ListFilter(l, func(value string) bool {
-			return value != correlationId
+	this.correlationStore.Update(key, func(l []CorrelationId) []CorrelationId {
+		return util.ListFilter(l, func(value CorrelationId) bool {
+			return value.id != correlationId
 		})
 	})
 }
 
 func (this *Connector) popCorrelationId(key string) (correlationId string, exists bool) {
-	this.correlationStore.Do(func(m *map[string][]string) {
+	this.correlationStore.Do(func(m *map[string][]CorrelationId) {
 		l, ok := (*m)[key]
 		if !ok {
 			exists = false
@@ -78,7 +94,7 @@ func (this *Connector) popCorrelationId(key string) (correlationId string, exist
 		}
 		if len(l) > 0 {
 			exists = true
-			correlationId = l[0]
+			correlationId = l[0].id
 			l = l[1:]
 			(*m)[key] = l
 		} else {

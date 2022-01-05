@@ -42,6 +42,7 @@ type Config struct {
 	MqttCmdClientId       string `json:"mqtt_cmd_client_id"`
 	MqttBroker            string `json:"mqtt_broker"`
 	DeleteDevices         bool   `json:"delete_devices"`
+	MaxCorrelationIdAge   string `json:"max_correlation_id_age"`
 }
 
 //loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)
