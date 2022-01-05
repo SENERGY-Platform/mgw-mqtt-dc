@@ -63,7 +63,6 @@ func (this *Connector) removeEvent(topic string) (err error) {
 	if !exists {
 		return nil
 	}
-	//TODO: unsub only if last no resp sub
 	err = this.eventMqttClient.Unsubscribe(desc.GetEventTopic())
 	if err != nil {
 		return err

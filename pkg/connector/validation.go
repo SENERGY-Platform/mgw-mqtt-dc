@@ -33,6 +33,7 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 	})
 
 	eventTopicUsed := map[string]bool{}
+	respTopicUsed := map[string]bool{}
 	cmdTopicUsed := map[string]bool{}
 	cmdIdUsed := map[string]bool{}
 
@@ -71,8 +72,6 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 			deviceToDeviceType[deviceId] = deviceTypeId
 		}
 
-		//TODO
-
 		//check for response topic reuse for commands
 		if cmd != "" {
 			cmdTopicUsed[cmd] = true
@@ -99,9 +98,16 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 			eventTopicUsed[event] = true
 		}
 
-		//TODO
-		//WARN if event and response topic collide (is ok but warning wuld be nice)
-
+		//WARN if event and response topic collide (it's but warning would be nice)
+		if resp != "" {
+			respTopicUsed[resp] = true
+			if eventTopicUsed[resp] {
+				log.Println("WARNING: response topic is also used as event topic", resp)
+			}
+		}
+		if event != "" && respTopicUsed[event] {
+			log.Println("WARNING: event topic is also used as response topic", event)
+		}
 	}
 	return nil
 }

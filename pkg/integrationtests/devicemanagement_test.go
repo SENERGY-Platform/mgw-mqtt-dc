@@ -205,8 +205,8 @@ func TestInitialDeviceInfo(t *testing.T) {
 	compareDeviceInfo := func(a mgw.DeviceInfoUpdate, b mgw.DeviceInfoUpdate) bool {
 		return a.DeviceId < b.DeviceId || a.Method < b.Method
 	}
-	expected = util.ListSort(expected, compareDeviceInfo)
-	deviceInfos = util.ListSort(deviceInfos, compareDeviceInfo)
+	util.ListSort(expected, compareDeviceInfo)
+	util.ListSort(deviceInfos, compareDeviceInfo)
 
 	if !reflect.DeepEqual(deviceInfos, expected) {
 		a, _ := json.Marshal(deviceInfos)
@@ -441,8 +441,8 @@ func TestTimedDeviceInfoUpdate(t *testing.T) {
 	compareDeviceInfo := func(a mgw.DeviceInfoUpdate, b mgw.DeviceInfoUpdate) bool {
 		return a.DeviceId < b.DeviceId || a.Method < b.Method
 	}
-	expected = util.ListSort(expected, compareDeviceInfo)
-	deviceInfos = util.ListSort(deviceInfos, compareDeviceInfo)
+	util.ListSort(expected, compareDeviceInfo)
+	util.ListSort(deviceInfos, compareDeviceInfo)
 
 	if !reflect.DeepEqual(deviceInfos, expected) {
 		a, _ := json.Marshal(deviceInfos)
@@ -672,8 +672,8 @@ func TestTimedDeviceInfoUpdateWithDelete(t *testing.T) {
 	compareDeviceInfo := func(a mgw.DeviceInfoUpdate, b mgw.DeviceInfoUpdate) bool {
 		return a.DeviceId < b.DeviceId || a.Method < b.Method
 	}
-	expected = util.ListSort(expected, compareDeviceInfo)
-	deviceInfos = util.ListSort(deviceInfos, compareDeviceInfo)
+	util.ListSort(expected, compareDeviceInfo)
+	util.ListSort(deviceInfos, compareDeviceInfo)
 
 	if !reflect.DeepEqual(deviceInfos, expected) {
 		a, _ := json.Marshal(deviceInfos)
@@ -907,8 +907,10 @@ func TestSignaledDeviceInfoUpdate(t *testing.T) {
 	compareDeviceInfo := func(a mgw.DeviceInfoUpdate, b mgw.DeviceInfoUpdate) bool {
 		return a.DeviceId < b.DeviceId || a.Method < b.Method
 	}
-	expected = util.ListSort(expected, compareDeviceInfo)
-	deviceInfos = util.ListSort(deviceInfos, compareDeviceInfo)
+	util.ListSort(expected, compareDeviceInfo)
+	util.ListSort(deviceInfos, compareDeviceInfo)
+	util.ListSort(expected, compareDeviceInfo)
+	util.ListSort(deviceInfos, compareDeviceInfo)
 
 	if !reflect.DeepEqual(deviceInfos, expected) {
 		a, _ := json.Marshal(deviceInfos)
@@ -1148,11 +1150,8 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 		return a.DeviceId < b.DeviceId || a.Method < b.Method
 	}
 
-	expected = util.ListSort(expected, compareDeviceInfo)
-	deviceInfos = util.ListSort(deviceInfos, compareDeviceInfo)
-
-	expected = util.ListSort(expected, compareDeviceInfo)
-	deviceInfos = util.ListSort(deviceInfos, compareDeviceInfo)
+	util.ListSort(expected, compareDeviceInfo)
+	util.ListSort(deviceInfos, compareDeviceInfo)
 
 	if !reflect.DeepEqual(deviceInfos, expected) {
 		a, _ := json.Marshal(deviceInfos)
