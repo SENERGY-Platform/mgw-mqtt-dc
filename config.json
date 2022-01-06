@@ -6,7 +6,7 @@
     "mgw_mqtt_client_id": "",
     "debug": true,
     "update_period": "10m",
-    "device_descriptions_dir": "",
+    "device_descriptions_dir": "topicdescriptions",
     "mqtt_pw": "",
     "mqtt_user": "",
     "mqtt_event_client_id": "",
