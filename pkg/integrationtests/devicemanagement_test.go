@@ -203,7 +203,7 @@ func TestInitialDeviceInfo(t *testing.T) {
 	}
 
 	compareDeviceInfo := func(a mgw.DeviceInfoUpdate, b mgw.DeviceInfoUpdate) bool {
-		return a.DeviceId < b.DeviceId || a.Method < b.Method
+		return a.DeviceId+a.Method < b.DeviceId+b.Method
 	}
 	util.ListSort(expected, compareDeviceInfo)
 	util.ListSort(deviceInfos, compareDeviceInfo)
@@ -439,7 +439,7 @@ func TestTimedDeviceInfoUpdate(t *testing.T) {
 	}
 
 	compareDeviceInfo := func(a mgw.DeviceInfoUpdate, b mgw.DeviceInfoUpdate) bool {
-		return a.DeviceId < b.DeviceId || a.Method < b.Method
+		return a.DeviceId+a.Method < b.DeviceId+b.Method
 	}
 	util.ListSort(expected, compareDeviceInfo)
 	util.ListSort(deviceInfos, compareDeviceInfo)
@@ -670,7 +670,7 @@ func TestTimedDeviceInfoUpdateWithDelete(t *testing.T) {
 	}
 
 	compareDeviceInfo := func(a mgw.DeviceInfoUpdate, b mgw.DeviceInfoUpdate) bool {
-		return a.DeviceId < b.DeviceId || a.Method < b.Method
+		return a.DeviceId+a.Method < b.DeviceId+b.Method
 	}
 	util.ListSort(expected, compareDeviceInfo)
 	util.ListSort(deviceInfos, compareDeviceInfo)
@@ -905,10 +905,8 @@ func TestSignaledDeviceInfoUpdate(t *testing.T) {
 	}
 
 	compareDeviceInfo := func(a mgw.DeviceInfoUpdate, b mgw.DeviceInfoUpdate) bool {
-		return a.DeviceId < b.DeviceId || a.Method < b.Method
+		return a.DeviceId+a.Method < b.DeviceId+b.Method
 	}
-	util.ListSort(expected, compareDeviceInfo)
-	util.ListSort(deviceInfos, compareDeviceInfo)
 	util.ListSort(expected, compareDeviceInfo)
 	util.ListSort(deviceInfos, compareDeviceInfo)
 
@@ -1147,7 +1145,7 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 	}
 
 	compareDeviceInfo := func(a mgw.DeviceInfoUpdate, b mgw.DeviceInfoUpdate) bool {
-		return a.DeviceId < b.DeviceId || a.Method < b.Method
+		return a.DeviceId+a.Method < b.DeviceId+b.Method
 	}
 
 	util.ListSort(expected, compareDeviceInfo)

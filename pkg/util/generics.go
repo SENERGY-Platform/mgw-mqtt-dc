@@ -117,3 +117,10 @@ func FMap5[I1 any, I2 any, I3 any, I4 any, I5 any, ResultType any, NewResultType
 		return result, err
 	}
 }
+
+func MapKeys[T1 comparable, T2 any](m map[T1]T2) (result []T1) {
+	for k, _ := range m {
+		result = append(result, k)
+	}
+	return
+}
