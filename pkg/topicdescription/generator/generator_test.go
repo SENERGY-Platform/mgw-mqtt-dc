@@ -18,8 +18,8 @@ package generator
 
 import (
 	"encoding/json"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/generator/iotmodel"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"reflect"
 	"testing"
@@ -110,7 +110,7 @@ func TestGenerateTopicDescriptions(t *testing.T) {
 		},
 	}
 
-	expected := []topicdescription.TopicDescription{
+	expected := []model.TopicDescription{
 		{
 			EventTopic:     "d1/e1",
 			DeviceTypeId:   "dt1",
@@ -196,7 +196,7 @@ func TestGenerateTopicDescriptions(t *testing.T) {
 			DeviceName:     "device 3",
 		},
 	}
-	util.ListSort(expected, func(a topicdescription.TopicDescription, b topicdescription.TopicDescription) bool {
+	util.ListSort(expected, func(a model.TopicDescription, b model.TopicDescription) bool {
 		return a.GetTopic() < b.GetTopic()
 	})
 

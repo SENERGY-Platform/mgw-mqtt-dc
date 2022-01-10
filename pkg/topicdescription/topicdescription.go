@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -30,57 +31,12 @@ import (
 	"strings"
 )
 
-type TopicDescription struct {
-	CmdTopic       string `json:"cmd_topic" yaml:"cmd_topic"`
-	EventTopic     string `json:"event_topic" yaml:"event_topic"`
-	RespTopic      string `json:"resp_topic" yaml:"resp_topic"`
-	DeviceTypeId   string `json:"device_type_id" yaml:"device_type_id"`
-	DeviceLocalId  string `json:"device_local_id" yaml:"device_local_id"`
-	ServiceLocalId string `json:"service_local_id" yaml:"service_local_id"`
-	DeviceName     string `json:"device_name" yaml:"device_name"`
-}
-
-func (this TopicDescription) GetTopic() string {
-	if this.EventTopic != "" {
-		return this.EventTopic
-	}
-	return this.CmdTopic
-}
-
-func (this TopicDescription) GetEventTopic() string {
-	return this.EventTopic
-}
-
-func (this TopicDescription) GetCmdTopic() string {
-	return this.CmdTopic
-}
-
-func (this TopicDescription) GetDeviceName() string {
-	return this.DeviceName
-}
-
-func (this TopicDescription) GetResponseTopic() string {
-	return this.RespTopic
-}
-
-func (this TopicDescription) GetDeviceTypeId() string {
-	return this.DeviceTypeId
-}
-
-func (this TopicDescription) GetLocalDeviceId() string {
-	return this.DeviceLocalId
-}
-
-func (this TopicDescription) GetLocalServiceId() string {
-	return this.ServiceLocalId
-}
-
-func Load(config configuration.Config) (topicDescriptions []TopicDescription, err error) {
+func Load(config configuration.Config) (topicDescriptions []model.TopicDescription, err error) {
 	return LoadDir(config.DeviceDescriptionsDir)
 }
 
-func LoadDir(dir string) (topicDescriptions []TopicDescription, err error) {
-	topicDescriptions = []TopicDescription{}
+func LoadDir(dir string) (topicDescriptions []model.TopicDescription, err error) {
+	topicDescriptions = []model.TopicDescription{}
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return topicDescriptions, err
@@ -129,7 +85,7 @@ func LoadDir(dir string) (topicDescriptions []TopicDescription, err error) {
 	return topicDescriptions, nil
 }
 
-func LoadJson(location string) (topicDescriptions []TopicDescription, err error) {
+func LoadJson(location string) (topicDescriptions []model.TopicDescription, err error) {
 	file, err := os.Open(location)
 	if err != nil {
 		log.Println("error on config load:\n", location, "\n", err)
@@ -143,7 +99,7 @@ func LoadJson(location string) (topicDescriptions []TopicDescription, err error)
 	return topicDescriptions, nil
 }
 
-func LoadYaml(location string) (topicDescriptions []TopicDescription, err error) {
+func LoadYaml(location string) (topicDescriptions []model.TopicDescription, err error) {
 	file, err := os.Open(location)
 	if err != nil {
 		log.Println("error on config load:\n", location, "\n", err)
@@ -157,7 +113,7 @@ func LoadYaml(location string) (topicDescriptions []TopicDescription, err error)
 	return topicDescriptions, nil
 }
 
-func LoadCsv(location string) (topicDescriptions []TopicDescription, err error) {
+func LoadCsv(location string) (topicDescriptions []model.TopicDescription, err error) {
 	file, err := os.Open(location)
 	if err != nil {
 		log.Println("error on config load:\n", location, "\n", err)
@@ -173,7 +129,7 @@ func LoadCsv(location string) (topicDescriptions []TopicDescription, err error) 
 		return topicDescriptions, err
 	}
 	for _, line := range lines {
-		temp := TopicDescription{
+		temp := model.TopicDescription{
 			CmdTopic:       "",
 			EventTopic:     "",
 			RespTopic:      "",

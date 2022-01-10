@@ -45,7 +45,7 @@ func GetDeviceInfos(token string, searchUrl string, repoUrl string, filterDevice
 				Limit:  9999,
 				Offset: 0,
 				Rights: "r",
-				SortBy: "id",
+				SortBy: "name",
 			},
 			Filter: &Selection{
 				Condition: &ConditionConfig{
@@ -63,6 +63,10 @@ func GetDeviceInfos(token string, searchUrl string, repoUrl string, filterDevice
 	dtIds := util.ListMap(wrappedDeviceTypeIds, func(from IdWrapper) string {
 		return from.Id
 	})
+
+	if dtIds == nil {
+		dtIds = []string{}
+	}
 
 	permsearchDevices := []iotmodel.Device{}
 	deviceFilter := Selection{
@@ -100,7 +104,7 @@ func GetDeviceInfos(token string, searchUrl string, repoUrl string, filterDevice
 				Limit:  9999,
 				Offset: 0,
 				Rights: "r",
-				SortBy: "id",
+				SortBy: "name",
 			},
 			Filter: &deviceFilter,
 		},
@@ -112,7 +116,7 @@ func GetDeviceInfos(token string, searchUrl string, repoUrl string, filterDevice
 
 	//local filter because filtering in permission-search may not be complete if device attributes contain Attributes{{Key:"foo", Value: filterDevicesByAttribute}, {Key:AttributeUsedForGenerator, Value: "bar"}}
 	devices = util.ListFilter(permsearchDevices, func(d iotmodel.Device) bool {
-		return util.ListContains(d.Attributes, func(a iotmodel.Attribute) bool {
+		return filterDevicesByAttribute == "" || util.ListContains(d.Attributes, func(a iotmodel.Attribute) bool {
 			return a.Key == AttributeUsedForGenerator && a.Value == filterDevicesByAttribute
 		})
 	})

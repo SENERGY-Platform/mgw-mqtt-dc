@@ -25,7 +25,7 @@ import (
 	"os"
 )
 
-func getFreePort() (int, error) {
+func GetFreePort() (int, error) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
 		return 0, err
