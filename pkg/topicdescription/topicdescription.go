@@ -32,7 +32,11 @@ import (
 )
 
 func Load(config configuration.Config) (topicDescriptions []model.TopicDescription, err error) {
-	return LoadDir(config.DeviceDescriptionsDir)
+	if config.GeneratorUse {
+		return LoadWithGenerator(config)
+	} else {
+		return LoadDir(config.DeviceDescriptionsDir)
+	}
 }
 
 func LoadDir(dir string) (topicDescriptions []model.TopicDescription, err error) {

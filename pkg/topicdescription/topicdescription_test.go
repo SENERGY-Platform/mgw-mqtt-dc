@@ -18,6 +18,7 @@ package topicdescription
 
 import (
 	"encoding/json"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"reflect"
 	"sort"
 	"testing"
@@ -180,9 +181,9 @@ func TestLoadDir(t *testing.T) {
 	}
 }
 
-func generateExpected(topics []string, withResp bool) (result []TopicDescription) {
+func generateExpected(topics []string, withResp bool) (result []model.TopicDescription) {
 	for _, topic := range topics {
-		temp := TopicDescription{
+		temp := model.TopicDescription{
 			DeviceTypeId:   "dtid",
 			DeviceLocalId:  "dlid",
 			ServiceLocalId: "slid",

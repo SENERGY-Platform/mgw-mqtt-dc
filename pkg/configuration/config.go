@@ -43,6 +43,20 @@ type Config struct {
 	MqttBroker            string `json:"mqtt_broker"`
 	DeleteDevices         bool   `json:"delete_devices"`
 	MaxCorrelationIdAge   string `json:"max_correlation_id_age"`
+
+	GeneratorUse bool `json:"generator_use"`
+
+	GeneratorAuthEndpoint     string `json:"generator_auth_endpoint"`
+	GeneratorAuthClientId     string `json:"generator_auth_client_id"`
+	GeneratorAuthClientSecret string `json:"generator_auth_client_secret"`
+	GeneratorAuthUsername     string `json:"generator_auth_username"`
+	GeneratorAuthPassword     string `json:"generator_auth_password"`
+
+	GeneratorPermissionSearchUrl      string `json:"generator_permission_search_url"`
+	GeneratorDeviceRepositoryUrl      string `json:"generator_device_repository_url"`
+	GeneratorFilterDevicesByAttribute string `json:"generator_filter_devices_by_attribute"`
+
+	GeneratorDeviceDescriptionsDir string `json:"generator_file_name"`
 }
 
 //loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)

@@ -13,5 +13,17 @@
     "mqtt_cmd_client_id": "",
     "mqtt_broker": "",
     "delete_devices": true,
-    "max_correlation_id_age": "90s"
+    "max_correlation_id_age": "90s",
+
+    "generator_use": false,
+    "generator_auth_username": "",
+    "generator_auth_password": "",
+    "generator_filter_devices_by_attribute": "",
+
+    "generator_auth_endpoint": "https://auth.senergy.infai.org",
+    "generator_auth_client_id": "client-connector-lib",
+    "generator_auth_client_secret": "",
+    "generator_permission_search_url": "https://api.senergy.infai.org/permissions/query",
+    "generator_device_repository_url": "https://api.senergy.infai.org/device-repository",
+    "generator_file_name": "topicdescriptions/generated"
 }

@@ -15,3 +15,70 @@
  */
 
 package generator
+
+import (
+	"encoding/json"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
+	"log"
+	"os"
+	"path"
+	"strings"
+)
+
+func Store(descriptions []model.TopicDescription, dir string) (err error) {
+	localDeviceIdToDescriptions := map[string][]model.TopicDescription{}
+	for _, desc := range descriptions {
+		localDeviceIdToDescriptions[desc.DeviceLocalId] = append(localDeviceIdToDescriptions[desc.DeviceLocalId], desc)
+	}
+
+	//create or update files
+	generatedFiles := map[string]bool{}
+	for localId, desc := range localDeviceIdToDescriptions {
+		fileName := getGeneratedFileName(localId)
+		generatedFiles[fileName] = true
+		fileLocation := path.Join(dir, fileName)
+		log.Println("GENERATOR: update/create", fileLocation)
+		err = StoreFile(desc, fileLocation)
+		if err != nil {
+			return err
+		}
+	}
+
+	//remove unused files
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	for _, f := range files {
+		name := f.Name()
+		if !generatedFiles[name] && strings.HasPrefix(name, fileNamePrefix) {
+			fileLocation := path.Join(dir, name)
+			log.Println("GENERATOR: remove", fileLocation)
+			err = os.Remove(fileLocation)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+const fileNamePrefix = "generated_"
+
+func getGeneratedFileName(localId string) string {
+	return fileNamePrefix + localId + ".json"
+}
+
+func StoreFile(descriptions []model.TopicDescription, fileLocation string) (err error) {
+	file, err := os.OpenFile(fileLocation, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	err = json.NewEncoder(file).Encode(descriptions)
+	if err != nil {
+		return err
+	}
+	return file.Sync()
+}
