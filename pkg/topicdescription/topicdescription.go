@@ -53,7 +53,7 @@ func LoadDir(dir string) (topicDescriptions []model.TopicDescription, err error)
 			}
 			topicDescriptions = append(topicDescriptions, temp...)
 		} else {
-			ext := filefilepath.Ext(file.Name())
+			ext := filepath.Ext(file.Name())
 			switch ext {
 			case ".md":
 				//ignore and do not warn

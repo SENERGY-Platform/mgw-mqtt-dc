@@ -21,6 +21,7 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/generator"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"log"
+	"path/filepath"
 )
 
 func LoadWithGenerator(config configuration.Config) (topicDescriptions []model.TopicDescription, err error) {
