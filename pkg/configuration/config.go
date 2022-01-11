@@ -57,6 +57,8 @@ type Config struct {
 	GeneratorFilterDevicesByAttribute string `json:"generator_filter_devices_by_attribute"`
 
 	GeneratorDeviceDescriptionsDir string `json:"generator_file_name"`
+
+	GeneratorTruncateDevicePrefix string `json:"generator_truncate_device_prefix"`
 }
 
 //loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)

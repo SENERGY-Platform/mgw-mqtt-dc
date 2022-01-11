@@ -39,7 +39,7 @@ func LoadWithGenerator(config configuration.Config) (topicDescriptions []model.T
 		log.Println("WARNING: unable to generate topic descriptions:", err)
 		return nil, err
 	}
-	err = generator.Store(generator.GenerateTopicDescriptions(devices, deviceTypes), path.Join(config.DeviceDescriptionsDir, config.GeneratorDeviceDescriptionsDir))
+	err = generator.Store(generator.GenerateTopicDescriptions(devices, deviceTypes, config.GeneratorTruncateDevicePrefix), path.Join(config.DeviceDescriptionsDir, config.GeneratorDeviceDescriptionsDir))
 	if err != nil {
 		log.Println("WARNING: unable to store generated topic descriptions:", err)
 		return nil, err
