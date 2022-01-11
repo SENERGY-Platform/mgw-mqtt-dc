@@ -90,7 +90,7 @@ Topic-Descriptions are used to describe how to map between the two mqtt brokers.
 - device_name
 
 ## Topic-Description Generator
-Topic-Descriptions bay be generated from devices on the Senergy-Platform.
+Topic-Descriptions may be generated from devices on the Senergy-Platform.
 
 ### Device-Type
 If a device type is to be used for generated topic-descriptions it has to use the attribute `senergy/local-mqtt` with any value. And its services define attributes used to generate topic-descriptions.
