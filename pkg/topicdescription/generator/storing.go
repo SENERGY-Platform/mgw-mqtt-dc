@@ -20,8 +20,9 @@ import (
 	"encoding/json"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"log"
+	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -36,7 +37,7 @@ func Store(descriptions []model.TopicDescription, dir string) (err error) {
 	for localId, desc := range localDeviceIdToDescriptions {
 		fileName := getGeneratedFileName(localId)
 		generatedFiles[fileName] = true
-		fileLocation := path.Join(dir, fileName)
+		fileLocation := filepath.Join(dir, fileName)
 		log.Println("GENERATOR: update/create", fileLocation)
 		err = StoreFile(desc, fileLocation)
 		if err != nil {
@@ -51,8 +52,8 @@ func Store(descriptions []model.TopicDescription, dir string) (err error) {
 	}
 	for _, f := range files {
 		name := f.Name()
-		if !generatedFiles[name] && strings.HasPrefix(name, fileNamePrefix) {
-			fileLocation := path.Join(dir, name)
+		if !generatedFiles[name] && strings.HasPrefix(name, FileNamePrefix) {
+			fileLocation := filepath.Join(dir, name)
 			log.Println("GENERATOR: remove", fileLocation)
 			err = os.Remove(fileLocation)
 			if err != nil {
@@ -64,10 +65,11 @@ func Store(descriptions []model.TopicDescription, dir string) (err error) {
 	return nil
 }
 
-const fileNamePrefix = "generated_"
+const FileNamePrefix = "generated_"
 
 func getGeneratedFileName(localId string) string {
-	return fileNamePrefix + localId + ".json"
+	sanitized := url.PathEscape(localId)
+	return FileNamePrefix + sanitized + ".json"
 }
 
 func StoreFile(descriptions []model.TopicDescription, fileLocation string) (err error) {

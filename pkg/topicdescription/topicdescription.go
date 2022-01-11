@@ -26,7 +26,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 )
@@ -46,7 +45,7 @@ func LoadDir(dir string) (topicDescriptions []model.TopicDescription, err error)
 		return topicDescriptions, err
 	}
 	for _, file := range files {
-		p := path.Join(dir, file.Name())
+		p := filepath.Join(dir, file.Name())
 		if file.IsDir() {
 			temp, err := LoadDir(p)
 			if err != nil {
@@ -54,7 +53,7 @@ func LoadDir(dir string) (topicDescriptions []model.TopicDescription, err error)
 			}
 			topicDescriptions = append(topicDescriptions, temp...)
 		} else {
-			ext := filepath.Ext(file.Name())
+			ext := filefilepath.Ext(file.Name())
 			switch ext {
 			case ".md":
 				//ignore and do not warn
