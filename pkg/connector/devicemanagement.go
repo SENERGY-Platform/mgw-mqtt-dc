@@ -22,6 +22,8 @@ import (
 	"net/url"
 )
 
+const DeviceState = "online"
+
 func (this *Connector) updateTopics() (err error) {
 	this.updateTopicsMux.Lock()
 	defer this.updateTopicsMux.Unlock()
@@ -126,7 +128,7 @@ func (this *Connector) updateTopics() (err error) {
 
 	//find new devices to add/update
 	for id, desc := range usedDevices {
-		err = this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), "")
+		err = this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), DeviceState)
 		if err != nil {
 			log.Println("ERROR: unable to send device info to mgw", err)
 			return err

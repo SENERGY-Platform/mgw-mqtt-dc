@@ -21,7 +21,6 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/generator"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"log"
-	"path/filepath"
 )
 
 func LoadWithGenerator(config configuration.Config) (topicDescriptions []model.TopicDescription, err error) {
@@ -39,7 +38,7 @@ func LoadWithGenerator(config configuration.Config) (topicDescriptions []model.T
 		log.Println("WARNING: unable to generate topic descriptions:", err)
 		return nil, err
 	}
-	err = generator.Store(generator.GenerateTopicDescriptions(devices, deviceTypes, config.GeneratorTruncateDevicePrefix), filepath.Join(config.DeviceDescriptionsDir, config.GeneratorDeviceDescriptionsDir))
+	err = generator.Store(generator.GenerateTopicDescriptions(devices, deviceTypes, config.GeneratorTruncateDevicePrefix), config.GeneratorDeviceDescriptionsDir)
 	if err != nil {
 		log.Println("WARNING: unable to store generated topic descriptions:", err)
 		return nil, err

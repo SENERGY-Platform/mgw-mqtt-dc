@@ -25,7 +25,7 @@
     "generator_auth_client_secret": "",
     "generator_permission_search_url": "https://api.senergy.infai.org/permissions/query",
     "generator_device_repository_url": "https://api.senergy.infai.org/device-repository",
-    "generator_file_name": "topicdescriptions/generated",
+    "generator_device_descriptions_dir": "topicdescriptions/generated",
 
     "generator_truncate_device_prefix": ""
 }

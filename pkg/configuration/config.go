@@ -56,7 +56,7 @@ type Config struct {
 	GeneratorDeviceRepositoryUrl      string `json:"generator_device_repository_url"`
 	GeneratorFilterDevicesByAttribute string `json:"generator_filter_devices_by_attribute"`
 
-	GeneratorDeviceDescriptionsDir string `json:"generator_file_name"`
+	GeneratorDeviceDescriptionsDir string `json:"generator_device_descriptions_dir"`
 
 	GeneratorTruncateDevicePrefix string `json:"generator_truncate_device_prefix"`
 }
