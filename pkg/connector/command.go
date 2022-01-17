@@ -39,7 +39,8 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 
 		err := this.commandMqttClient.Publish(desc.GetCmdTopic(), 2, false, []byte(command.Data))
 		if err != nil {
-			log.Println("ERROR: unable to send command to mgw", err)
+			log.Println("ERROR: unable to send command to mqtt", err)
+			this.mgwClient.SendCommandError(command.CommandId, "unable to send command to mqtt: "+err.Error())
 			this.removeCorrelationId(cmdId, command.CommandId)
 		}
 
@@ -50,6 +51,7 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 			})
 			if err != nil {
 				log.Println("ERROR: unable to send empty response", err)
+				this.mgwClient.SendCommandError(command.CommandId, "unable to send empty response: "+err.Error())
 			}
 		}
 	}()

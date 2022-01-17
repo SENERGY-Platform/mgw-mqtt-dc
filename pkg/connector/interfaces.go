@@ -39,6 +39,10 @@ type MgwClient interface {
 	RemoveDevice(deviceId string) error
 	SendEvent(deviceId string, serviceId string, value []byte) error
 	Respond(deviceId string, serviceId string, response mgw.Command) error
+
+	SendClientError(message string)
+	SendDeviceError(localDeviceId string, message string)
+	SendCommandError(correlationId string, message string)
 }
 
 type TopicDescription interface {

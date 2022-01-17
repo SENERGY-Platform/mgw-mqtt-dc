@@ -27,6 +27,7 @@ func (this *Connector) EventHandler(topic string, payload []byte) {
 		err := this.mgwClient.SendEvent(desc.GetLocalDeviceId(), desc.GetLocalServiceId(), payload)
 		if err != nil {
 			log.Println("ERROR: unable to send event to mgw", err)
+			this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to send event to mgw: "+err.Error())
 		}
 	}()
 }

@@ -42,6 +42,7 @@ func (this *Client) ListenToDeviceCommands(deviceId string, commandHandler Devic
 		err := json.Unmarshal(message.Payload(), &command)
 		if err != nil {
 			log.Println("ERROR: unable to unmarshal command", err)
+			this.SendClientError("unable to unmarshal command: " + err.Error())
 			return
 		}
 		commandHandler(deviceId, serviceId, command)

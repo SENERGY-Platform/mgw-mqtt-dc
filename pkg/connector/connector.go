@@ -75,7 +75,7 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 	if err != nil {
 		return result, err
 	}
-	
+
 	result.mgwClient, err = mgwFactory(ctx, config, result.RefreshDeviceInfo)
 	if err != nil {
 		return result, err
@@ -88,6 +88,7 @@ func (this *Connector) RefreshDeviceInfo() {
 	err := this.updateTopics()
 	if err != nil {
 		log.Println("ERROR: unable to update device registry after refresh notification:", err)
+		this.mgwClient.SendClientError("unable to update device registry after refresh notification: " + err.Error())
 	}
 	return
 }
@@ -105,6 +106,7 @@ func (this *Connector) startPeriodicalTopicRegistryUpdate(ctx context.Context) (
 		this.updateTickerDuration, err = time.ParseDuration(this.config.UpdatePeriod)
 		if err != nil {
 			log.Println("ERROR: unable to parse update period as duration")
+			this.mgwClient.SendClientError("unable to parse update period as duration: " + err.Error())
 			return err
 		}
 		this.updateTicker = time.NewTicker(this.updateTickerDuration)
@@ -122,6 +124,7 @@ func (this *Connector) startPeriodicalTopicRegistryUpdate(ctx context.Context) (
 					err = this.updateTopics()
 					if err != nil {
 						log.Println("ERROR:", err)
+						this.mgwClient.SendClientError(err.Error())
 						debug.PrintStack()
 					}
 				}

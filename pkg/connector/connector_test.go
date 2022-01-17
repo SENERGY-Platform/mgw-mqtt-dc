@@ -150,6 +150,18 @@ func newMqttMock(ctx context.Context, brokerUrl string, clientId string, usernam
 	return MqttMock{}, nil
 }
 
+func (this *MgwMock) SendClientError(message string) {
+	log.Println("SendClientError", message)
+}
+
+func (this *MgwMock) SendDeviceError(localDeviceId string, message string) {
+	log.Println("SendDeviceError", message)
+}
+
+func (this *MgwMock) SendCommandError(correlationId string, message string) {
+	log.Println("SendCommandError", message)
+}
+
 type MqttMock struct {
 }
 

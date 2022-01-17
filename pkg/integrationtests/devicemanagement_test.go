@@ -182,6 +182,7 @@ func TestInitialDeviceInfo(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d1",
 				DeviceType: "dt1",
+				State:      "online",
 			},
 		},
 		{
@@ -190,6 +191,7 @@ func TestInitialDeviceInfo(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d2",
 				DeviceType: "dt1",
+				State:      "online",
 			},
 		},
 		{
@@ -198,6 +200,7 @@ func TestInitialDeviceInfo(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d3",
 				DeviceType: "dt2",
+				State:      "online",
 			},
 		},
 	}
@@ -392,6 +395,7 @@ func TestTimedDeviceInfoUpdate(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d1",
 				DeviceType: "dt1",
+				State:      "online",
 			},
 		},
 		{
@@ -400,6 +404,7 @@ func TestTimedDeviceInfoUpdate(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d2",
 				DeviceType: "dt1",
+				State:      "online",
 			},
 		},
 		{
@@ -408,6 +413,7 @@ func TestTimedDeviceInfoUpdate(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d3",
 				DeviceType: "dt2",
+				State:      "online",
 			},
 		},
 	}
@@ -421,6 +427,7 @@ func TestTimedDeviceInfoUpdate(t *testing.T) {
 		Data: mgw.DeviceInfo{
 			Name:       "d4",
 			DeviceType: "dt2",
+			State:      "online",
 		},
 	})
 	expected = append(expected, expectedBase...)
@@ -628,6 +635,7 @@ func TestTimedDeviceInfoUpdateWithDelete(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d1",
 				DeviceType: "dt1",
+				State:      "online",
 			},
 		},
 		{
@@ -636,6 +644,7 @@ func TestTimedDeviceInfoUpdateWithDelete(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d2",
 				DeviceType: "dt1",
+				State:      "online",
 			},
 		},
 		{
@@ -644,6 +653,7 @@ func TestTimedDeviceInfoUpdateWithDelete(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d3",
 				DeviceType: "dt2",
+				State:      "online",
 			},
 		},
 	}
@@ -657,6 +667,7 @@ func TestTimedDeviceInfoUpdateWithDelete(t *testing.T) {
 		Data: mgw.DeviceInfo{
 			Name:       "d4",
 			DeviceType: "dt2",
+			State:      "online",
 		},
 	})
 	expected = append(expected, expectedBase...)
@@ -868,6 +879,7 @@ func TestSignaledDeviceInfoUpdate(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d1",
 				DeviceType: "dt1",
+				State:      "online",
 			},
 		},
 		{
@@ -876,6 +888,7 @@ func TestSignaledDeviceInfoUpdate(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d2",
 				DeviceType: "dt1",
+				State:      "online",
 			},
 		},
 		{
@@ -884,6 +897,7 @@ func TestSignaledDeviceInfoUpdate(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d3",
 				DeviceType: "dt2",
+				State:      "online",
 			},
 		},
 	}
@@ -897,6 +911,7 @@ func TestSignaledDeviceInfoUpdate(t *testing.T) {
 		Data: mgw.DeviceInfo{
 			Name:       "d4",
 			DeviceType: "dt2",
+			State:      "online",
 		},
 	})
 	expected = append(expected, expectedBase...)
@@ -1103,6 +1118,7 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d1",
 				DeviceType: "dt1",
+				State:      "online",
 			},
 		},
 		{
@@ -1111,6 +1127,7 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d2",
 				DeviceType: "dt1",
+				State:      "online",
 			},
 		},
 		{
@@ -1119,6 +1136,7 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 			Data: mgw.DeviceInfo{
 				Name:       "d3",
 				DeviceType: "dt2",
+				State:      "online",
 			},
 		},
 	}
@@ -1132,6 +1150,7 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 		Data: mgw.DeviceInfo{
 			Name:       "d4",
 			DeviceType: "dt2",
+			State:      "online",
 		},
 	})
 	expected = append(expected, expectedBase...)

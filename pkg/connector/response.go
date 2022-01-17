@@ -43,6 +43,7 @@ func (this *Connector) ResponseHandler(topic string, payload []byte) {
 		})
 		if err != nil {
 			log.Println("ERROR: unable to send response", err)
+			this.mgwClient.SendCommandError(correlationId, "unable to send response: "+err.Error())
 		}
 	}()
 }

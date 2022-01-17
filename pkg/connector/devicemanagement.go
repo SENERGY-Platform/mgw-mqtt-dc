@@ -131,6 +131,7 @@ func (this *Connector) updateTopics() (err error) {
 		err = this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), DeviceState)
 		if err != nil {
 			log.Println("ERROR: unable to send device info to mgw", err)
+			this.mgwClient.SendClientError("unable to send device info to mgw: " + err.Error())
 			return err
 		}
 		if _, ok := oldDevices[id]; !ok {
@@ -161,6 +162,7 @@ func (this *Connector) addDeviceCommandListener(device DeviceDescription) (err e
 	err = this.mgwClient.ListenToDeviceCommands(device.GetLocalDeviceId(), this.CommandHandler)
 	if err != nil {
 		log.Println("ERROR: unable to subscribe to device commands", err)
+		this.mgwClient.SendClientError("unable to subscribe to device commands: " + err.Error())
 		return err
 	}
 	return nil
