@@ -100,11 +100,12 @@ If a device type is to be used for generated topic-descriptions it has to use th
 - `senergy/local-mqtt/cmd-topic-tmpl`: template used to generate a command topic description.
 - `senergy/local-mqtt/resp-topic-tmpl`: template used to generate a response topic description for a matching command.
 
-The attributes define template to generate topics. Placeholders for these templates are:
+The attributes define templates to generate topics. Placeholders for these templates are:
 - `{{.Device}}` local device id (may be truncated by `generator_truncate_device_prefix`)
 - `{{.LocalDeviceId}}` same as `{{.Device}}`
 - `{{.Service}}`
 - `{{.LocalServiceId}}` same as `{{.Service}}`
+- device attributes, that are valid template placeholders
 
 ### Device
 

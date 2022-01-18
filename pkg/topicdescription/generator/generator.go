@@ -68,7 +68,7 @@ func GenerateCommandServiceTopicDescriptions(device iotmodel.Device, service iot
 	if !found {
 		return result
 	}
-	cmdTopic, err := GenerateTopic(cmdTopicTempl, device.LocalId, service.LocalId, truncateDevicePrefix)
+	cmdTopic, err := GenerateTopic(cmdTopicTempl, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
 	if err != nil {
 		log.Println("WARNING: invalid command topic template", cmdTopicTempl, "in", device.Name, device.Id, device.LocalId, service.Name, service.Id, service.LocalId)
 		return result
@@ -83,7 +83,7 @@ func GenerateCommandServiceTopicDescriptions(device iotmodel.Device, service iot
 	}
 	respTopic, found := GetAttributeValue(service.Attributes, ResponseAttribute)
 	if found {
-		temp.RespTopic, err = GenerateTopic(respTopic, device.LocalId, service.LocalId, truncateDevicePrefix)
+		temp.RespTopic, err = GenerateTopic(respTopic, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
 		if err != nil {
 			log.Println("WARNING: invalid response topic template", cmdTopicTempl, "in", device.Name, device.Id, device.LocalId, service.Name, service.Id, service.LocalId)
 			return result
@@ -97,7 +97,7 @@ func GenerateEventServiceTopicDescriptions(device iotmodel.Device, service iotmo
 	if !found {
 		return result
 	}
-	eventTopic, err := GenerateTopic(eventTopicTempl, device.LocalId, service.LocalId, truncateDevicePrefix)
+	eventTopic, err := GenerateTopic(eventTopicTempl, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
 	if err != nil {
 		log.Println("WARNING: invalid event topic template", eventTopic, "in", device.Name, device.Id, device.LocalId, service.Name, service.Id, service.LocalId)
 		return result
@@ -120,7 +120,7 @@ func GetAttributeValue(attributes []iotmodel.Attribute, key string) (result stri
 	return result, false
 }
 
-func GenerateTopic(topicTemplate string, deviceId string, serviceId string, truncateDevicePrefix string) (result string, err error) {
+func GenerateTopic(topicTemplate string, deviceId string, serviceId string, truncateDevicePrefix string, attributes []iotmodel.Attribute) (result string, err error) {
 	values := map[string]string{}
 	for _, placeholder := range TemplateLocalDeviceIdPlaceholders {
 		temp := deviceId
@@ -132,10 +132,26 @@ func GenerateTopic(topicTemplate string, deviceId string, serviceId string, trun
 	for _, placeholder := range TemplateLocalServiceIdPlaceholders {
 		values[placeholder] = serviceId
 	}
+
+	for _, attr := range attributes {
+		if isValidPlaceholder(attr.Key) {
+			values[attr.Key] = attr.Value
+		}
+	}
+
 	var temp bytes.Buffer
-	err = template.Must(template.New("").Parse(topicTemplate)).Execute(&temp, values)
+	t, err := template.New("").Option("missingkey=zero").Parse(topicTemplate)
+	if err != nil {
+		return "", err
+	}
+	err = t.Execute(&temp, values)
 	if err != nil {
 		return "", err
 	}
 	return temp.String(), nil
+}
+
+func isValidPlaceholder(key string) bool {
+	_, err := template.New("").Parse("{{." + key + "}}")
+	return err == nil
 }

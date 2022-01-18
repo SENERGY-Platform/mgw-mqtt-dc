@@ -393,3 +393,192 @@ func TestGenerateTopicDescriptions(t *testing.T) {
 		t.Error("\n", string(e), "\n", string(a))
 	}
 }
+
+func TestGenerateTopicDescriptionsWithAttr(t *testing.T) {
+	devices := []iotmodel.Device{
+		{
+			LocalId:      "d1",
+			Name:         "device 1",
+			DeviceTypeId: "dt1",
+			Attributes: []iotmodel.Attribute{
+				{Key: "foo", Value: "bar"},
+				{Key: "something", Value: "else"},
+				{Key: "sepl/batz", Value: "ignore"},
+			},
+		},
+		{
+			LocalId:      "d2",
+			Name:         "device 2",
+			DeviceTypeId: "dt1",
+		},
+		{
+			LocalId:      "d3",
+			Name:         "device 3",
+			DeviceTypeId: "dt2",
+		},
+		//dt doesnt use searched attributes
+		{
+			LocalId:      "d4",
+			Name:         "device 4",
+			DeviceTypeId: "dt3",
+		},
+		//dt is unknown
+		{
+			LocalId:      "d5",
+			Name:         "device 5",
+			DeviceTypeId: "dt4",
+		},
+	}
+
+	deviceTypes := []iotmodel.DeviceType{
+		{
+			Id: "dt1",
+			Services: []iotmodel.Service{
+				{
+					LocalId: "s1",
+					Attributes: []iotmodel.Attribute{
+						{Key: EventAttribute, Value: "{{.foo}}{{.Device}}/e1"},
+					},
+				},
+				{
+					LocalId: "s2",
+					Attributes: []iotmodel.Attribute{
+						{Key: CommandAttribute, Value: "{{.foo}}{{.Device}}/c1"},
+					},
+				},
+				{
+					LocalId: "s3",
+					Attributes: []iotmodel.Attribute{
+						{Key: CommandAttribute, Value: "{{.foo}}{{.Device}}/c2"},
+						{Key: ResponseAttribute, Value: "{{.foo}}{{.Device}}/r2"},
+					},
+				},
+				{
+					LocalId: "s4",
+					Attributes: []iotmodel.Attribute{
+						{Key: EventAttribute, Value: "{{.foo}}{{.Device}}/e3"},
+						{Key: CommandAttribute, Value: "{{.foo}}{{.Device}}/c3"},
+						{Key: ResponseAttribute, Value: "{{.foo}}{{.Device}}/r3"},
+					},
+				},
+			},
+		},
+		{
+			Id: "dt2",
+			Services: []iotmodel.Service{
+				{
+					LocalId: "s1",
+					Attributes: []iotmodel.Attribute{
+						{Key: EventAttribute, Value: "{{.LocalDeviceId}}/{{.LocalServiceId}}"},
+					},
+				},
+			},
+		},
+		{
+			Id: "dt3",
+			Services: []iotmodel.Service{
+				{
+					LocalId: "s1",
+				},
+			},
+		},
+	}
+
+	expected := []model.TopicDescription{
+		{
+			EventTopic:     "bard1/e1",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  "d1",
+			ServiceLocalId: "s1",
+			DeviceName:     "device 1",
+		},
+		{
+			EventTopic:     "d2/e1",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  "d2",
+			ServiceLocalId: "s1",
+			DeviceName:     "device 2",
+		},
+
+		{
+			CmdTopic:       "bard1/c1",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  "d1",
+			ServiceLocalId: "s2",
+			DeviceName:     "device 1",
+		},
+		{
+			CmdTopic:       "d2/c1",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  "d2",
+			ServiceLocalId: "s2",
+			DeviceName:     "device 2",
+		},
+		{
+			CmdTopic:       "bard1/c2",
+			RespTopic:      "bard1/r2",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  "d1",
+			ServiceLocalId: "s3",
+			DeviceName:     "device 1",
+		},
+		{
+			CmdTopic:       "d2/c2",
+			RespTopic:      "d2/r2",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  "d2",
+			ServiceLocalId: "s3",
+			DeviceName:     "device 2",
+		},
+
+		{
+			EventTopic:     "bard1/e3",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  "d1",
+			ServiceLocalId: "s4",
+			DeviceName:     "device 1",
+		},
+		{
+			EventTopic:     "d2/e3",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  "d2",
+			ServiceLocalId: "s4",
+			DeviceName:     "device 2",
+		},
+		{
+			CmdTopic:       "bard1/c3",
+			RespTopic:      "bard1/r3",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  "d1",
+			ServiceLocalId: "s4",
+			DeviceName:     "device 1",
+		},
+		{
+			CmdTopic:       "d2/c3",
+			RespTopic:      "d2/r3",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  "d2",
+			ServiceLocalId: "s4",
+			DeviceName:     "device 2",
+		},
+
+		{
+			EventTopic:     "d3/s1",
+			DeviceTypeId:   "dt2",
+			DeviceLocalId:  "d3",
+			ServiceLocalId: "s1",
+			DeviceName:     "device 3",
+		},
+	}
+	util.ListSort(expected, func(a model.TopicDescription, b model.TopicDescription) bool {
+		return a.GetTopic() < b.GetTopic()
+	})
+
+	actual := GenerateTopicDescriptions(devices, deviceTypes, "")
+
+	if !reflect.DeepEqual(expected, actual) {
+		e, _ := json.Marshal(expected)
+		a, _ := json.Marshal(actual)
+		t.Error("\n", string(e), "\n", string(a))
+	}
+}
