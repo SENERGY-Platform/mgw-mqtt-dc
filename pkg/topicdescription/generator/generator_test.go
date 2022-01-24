@@ -582,3 +582,59 @@ func TestGenerateTopicDescriptionsWithAttr(t *testing.T) {
 		t.Error("\n", string(e), "\n", string(a))
 	}
 }
+
+func TestGeneratorDuplicate(t *testing.T) {
+	devices := []iotmodel.Device{
+		{
+			LocalId:      "d1",
+			Name:         "device 1",
+			DeviceTypeId: "dt1",
+		},
+	}
+
+	deviceTypes := []iotmodel.DeviceType{
+		{
+			Id: "dt1",
+			Services: []iotmodel.Service{
+				{
+					Name:    "setOn",
+					LocalId: "power",
+					Attributes: []iotmodel.Attribute{
+						{Key: CommandAttribute, Value: "{{.Device}}/c2"},
+						{Key: ResponseAttribute, Value: "{{.Device}}/r2"},
+					},
+				},
+				{
+					Name:    "setOff",
+					LocalId: "power",
+					Attributes: []iotmodel.Attribute{
+						{Key: CommandAttribute, Value: "{{.Device}}/c2"},
+						{Key: ResponseAttribute, Value: "{{.Device}}/r2"},
+					},
+				},
+			},
+		},
+	}
+
+	expected := []model.TopicDescription{
+		{
+			CmdTopic:       "d1/c2",
+			RespTopic:      "d1/r2",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  "d1",
+			ServiceLocalId: "power",
+			DeviceName:     "device 1",
+		},
+	}
+	util.ListSort(expected, func(a model.TopicDescription, b model.TopicDescription) bool {
+		return a.GetTopic() < b.GetTopic()
+	})
+
+	actual := GenerateTopicDescriptions(devices, deviceTypes, "")
+
+	if !reflect.DeepEqual(expected, actual) {
+		e, _ := json.Marshal(expected)
+		a, _ := json.Marshal(actual)
+		t.Error("\n", string(e), "\n", string(a))
+	}
+}

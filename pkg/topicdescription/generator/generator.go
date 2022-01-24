@@ -47,7 +47,7 @@ func GenerateTopicDescriptions(devices []iotmodel.Device, deviceTypes []iotmodel
 	util.ListSort(result, func(a model.TopicDescription, b model.TopicDescription) bool {
 		return a.GetTopic() < b.GetTopic()
 	})
-	return result
+	return FilterDuplicates(result)
 }
 
 func GenerateDeviceTopicDescriptions(device iotmodel.Device, deviceType iotmodel.DeviceType, truncateDevicePrefix string) (result []model.TopicDescription) {
