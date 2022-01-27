@@ -21,6 +21,7 @@ import (
 	paho "github.com/eclipse/paho.mqtt.golang"
 	"log"
 	"sync"
+	"time"
 )
 
 func New(ctx context.Context, brokerUrl string, clientId string, username string, password string) (client *Mqtt, err error) {
@@ -55,6 +56,8 @@ func (this *Mqtt) init(ctx context.Context) error {
 		SetClientID(this.clientId).
 		AddBroker(this.brokerUrl).
 		SetResumeSubs(true).
+		SetWriteTimeout(10 * time.Second).
+		SetOrderMatters(false).
 		SetConnectionLostHandler(func(_ paho.Client, err error) {
 			log.Println("connection to mqtt broker lost")
 		}).

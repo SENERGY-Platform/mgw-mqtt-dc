@@ -22,6 +22,7 @@ import (
 	paho "github.com/eclipse/paho.mqtt.golang"
 	"log"
 	"sync"
+	"time"
 )
 
 const DeviceManagerTopic = "device-manager/device"
@@ -51,6 +52,8 @@ func New(ctx context.Context, config configuration.Config, refreshNotifier func(
 		SetClientID(config.MgwMqttClientId).
 		AddBroker(config.MgwMqttBroker).
 		SetResumeSubs(true).
+		SetWriteTimeout(10*time.Second).
+		SetOrderMatters(false).
 		SetConnectionLostHandler(func(_ paho.Client, err error) {
 			log.Println("connection to mgw broker lost")
 		}).
