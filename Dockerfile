@@ -1,6 +1,4 @@
-#TODO
-#replace rc with stable tag
-FROM golang:1.18-rc AS builder
+FROM golang:1.18 AS builder
 
 COPY . /go/src/app
 WORKDIR /go/src/app
