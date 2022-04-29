@@ -5,7 +5,7 @@
     "mgw_mqtt_pw": "",
     "mgw_mqtt_client_id": "",
     "debug": true,
-    "update_period": "10m",
+    "update_period": "5m",
     "device_descriptions_dir": "topicdescriptions",
     "mqtt_pw": "",
     "mqtt_user": "",
