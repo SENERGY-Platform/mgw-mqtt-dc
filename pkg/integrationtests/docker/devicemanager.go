@@ -18,13 +18,64 @@ package docker
 
 import (
 	"context"
-	"github.com/ory/dockertest/v3"
+	"github.com/SENERGY-Platform/permission-search/lib/tests/docker"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
-	"net/http"
 	"sync"
 )
 
+func DeviceManager(ctx context.Context, wg *sync.WaitGroup, kafkaUrl string, deviceRepoUrl string, permsearch string) (hostPort string, ipAddress string, err error) {
+	log.Println("start device-manager")
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "ghcr.io/senergy-platform/device-manager:dev",
+			Env: map[string]string{
+				"KAFKA_URL":          kafkaUrl,
+				"PERMISSIONS_URL":    permsearch,
+				"DEVICE_REPO_URL":    deviceRepoUrl,
+				"DISABLE_VALIDATION": "true",
+			},
+			ExposedPorts:    []string{"8080/tcp"},
+			WaitingFor:      wait.ForListeningPort("8080/tcp"),
+			AlwaysPullImage: true,
+		},
+		Started: true,
+	})
+	if err != nil {
+		return "", "", err
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		log.Println("DEBUG: remove container device-manager", c.Terminate(context.Background()))
+	}()
+
+	err = docker.Dockerlog(ctx, c, "DEVICE-MANAGER")
+	if err != nil {
+		return "", "", err
+	}
+
+	ipAddress, err = c.ContainerIP(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	temp, err := c.MappedPort(ctx, "8080/tcp")
+	if err != nil {
+		return "", "", err
+	}
+	hostPort = temp.Port()
+
+	return hostPort, ipAddress, err
+}
+
 func DeviceManagerWithDependencies(basectx context.Context, wg *sync.WaitGroup) (managerUrl string, repoUrl string, searchUrl string, err error) {
+	_, managerUrl, repoUrl, searchUrl, err = DeviceManagerWithDependenciesAndKafka(basectx, wg)
+	return
+}
+
+func DeviceManagerWithDependenciesAndKafka(basectx context.Context, wg *sync.WaitGroup) (kafkaUrl string, managerUrl string, repoUrl string, searchUrl string, err error) {
 	ctx, cancel := context.WithCancel(basectx)
 	defer func() {
 		if err != nil {
@@ -34,77 +85,42 @@ func DeviceManagerWithDependencies(basectx context.Context, wg *sync.WaitGroup) 
 
 	_, zkIp, err := Zookeeper(ctx, wg)
 	if err != nil {
-		return managerUrl, repoUrl, searchUrl, err
+		return kafkaUrl, managerUrl, repoUrl, searchUrl, err
 	}
 	zookeeperUrl := zkIp + ":2181"
 
-	kafkaUrl, err := Kafka(ctx, wg, zookeeperUrl)
+	kafkaUrl, err = Kafka(ctx, wg, zookeeperUrl)
 	if err != nil {
-		return managerUrl, repoUrl, searchUrl, err
+		return kafkaUrl, managerUrl, repoUrl, searchUrl, err
 	}
 
 	_, elasticIp, err := ElasticSearch(ctx, wg)
 	if err != nil {
-		return managerUrl, repoUrl, searchUrl, err
+		return kafkaUrl, managerUrl, repoUrl, searchUrl, err
 	}
 
-	_, permIp, err := PermSearch(ctx, wg, kafkaUrl, elasticIp)
+	_, permIp, err := PermSearch(ctx, wg, true, kafkaUrl, elasticIp)
 	if err != nil {
-		return managerUrl, repoUrl, searchUrl, err
+		return kafkaUrl, managerUrl, repoUrl, searchUrl, err
 	}
 	searchUrl = "http://" + permIp + ":8080"
 
 	_, mongoIp, err := MongoDB(ctx, wg)
 	if err != nil {
-		return managerUrl, repoUrl, searchUrl, err
+		return kafkaUrl, managerUrl, repoUrl, searchUrl, err
 	}
 
 	_, repoIp, err := DeviceRepo(ctx, wg, kafkaUrl, "mongodb://"+mongoIp+":27017", searchUrl)
 	if err != nil {
-		return managerUrl, repoUrl, searchUrl, err
+		return kafkaUrl, managerUrl, repoUrl, searchUrl, err
 	}
 	repoUrl = "http://" + repoIp + ":8080"
 
-	_, managerIp, err := DeviceManager(ctx, wg, kafkaUrl, "-", repoUrl, searchUrl)
+	_, managerIp, err := DeviceManager(ctx, wg, kafkaUrl, repoUrl, searchUrl)
 	if err != nil {
-		return managerUrl, repoUrl, searchUrl, err
+		return kafkaUrl, managerUrl, repoUrl, searchUrl, err
 	}
 	managerUrl = "http://" + managerIp + ":8080"
 
-	return managerUrl, repoUrl, searchUrl, err
-}
-
-func DeviceManager(ctx context.Context, wg *sync.WaitGroup, kafkaUrl string, semantic string, devicerepo string, permsearch string) (hostPort string, ipAddress string, err error) {
-	log.Println("start device-manager")
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return "", "", err
-	}
-	container, err := pool.Run("ghcr.io/senergy-platform/device-manager", "dev", []string{
-		"KAFKA_URL=" + kafkaUrl,
-		"SEMANTIC_REPO_URL=" + semantic,
-		"DEVICE_REPO_URL=" + devicerepo,
-		"PERMISSIONS_URL=" + permsearch,
-	})
-	if err != nil {
-		return "", "", err
-	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-ctx.Done()
-		log.Println("DEBUG: remove container " + container.Container.Name)
-		container.Close()
-	}()
-	go Dockerlog(pool, ctx, container, "DEVICE-MANAGER")
-	hostPort = container.GetPort("8080/tcp")
-	err = pool.Retry(func() error {
-		log.Println("try device-manager connection...")
-		_, err := http.Get("http://localhost:" + hostPort)
-		if err != nil {
-			log.Println(err)
-		}
-		return err
-	})
-	return hostPort, container.Container.NetworkSettings.IPAddress, err
+	return kafkaUrl, managerUrl, repoUrl, searchUrl, err
 }

@@ -30,14 +30,7 @@ func TestLogin(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	keycloakPort, _, err := docker.Keycloak(ctx, wg)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	keycloakUrl := "http://localhost:" + keycloakPort
-	err = docker.ConfigKeycloak(keycloakUrl)
+	keycloakUrl, err := docker.Keycloak(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return
@@ -63,14 +56,7 @@ func TestLoginRefresh(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	keycloakPort, _, err := docker.Keycloak(ctx, wg)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	keycloakUrl := "http://localhost:" + keycloakPort
-	err = docker.ConfigKeycloak(keycloakUrl)
+	keycloakUrl, err := docker.Keycloak(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return

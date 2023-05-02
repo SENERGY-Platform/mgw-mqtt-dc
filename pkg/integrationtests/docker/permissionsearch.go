@@ -17,73 +17,9 @@
 package docker
 
 import (
-	"context"
-	"github.com/ory/dockertest/v3"
-	"log"
-	"net/http"
-	"sync"
+	"github.com/SENERGY-Platform/permission-search/lib/tests/docker"
 )
 
-func ElasticSearch(ctx context.Context, wg *sync.WaitGroup) (hostPort string, ipAddress string, err error) {
-	log.Println("start elasticsearch")
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return "", "", err
-	}
-	container, err := pool.Run("docker.elastic.co/elasticsearch/elasticsearch", "7.6.1", []string{"discovery.type=single-node"})
-	if err != nil {
-		return "", "", err
-	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-ctx.Done()
-		log.Println("DEBUG: remove container " + container.Container.Name)
-		container.Close()
-	}()
-	go Dockerlog(pool, ctx, container, "ELASTIC-SEARCH")
-	hostPort = container.GetPort("9200/tcp")
-	err = pool.Retry(func() error {
-		log.Println("try elastic connection...")
-		_, err := http.Get("http://localhost:" + hostPort + "/_cluster/health")
-		return err
-	})
-	if err != nil {
-		log.Println(err)
-	}
-	return hostPort, container.Container.NetworkSettings.IPAddress, err
-}
+var PermSearch = docker.PermissionSearch
 
-func PermSearch(ctx context.Context, wg *sync.WaitGroup, kafkaUrl string, elasticIp string) (hostPort string, ipAddress string, err error) {
-	log.Println("start permsearch")
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return "", "", err
-	}
-	container, err := pool.Run("ghcr.io/senergy-platform/permission-search", "dev", []string{
-		"KAFKA_URL=" + kafkaUrl,
-		"ELASTIC_URL=" + "http://" + elasticIp + ":9200",
-		"DEBUG=true",
-	})
-	if err != nil {
-		return "", "", err
-	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-ctx.Done()
-		log.Println("DEBUG: remove container " + container.Container.Name)
-		container.Close()
-	}()
-	go Dockerlog(pool, ctx, container, "PERMSEARCH")
-	hostPort = container.GetPort("8080/tcp")
-	err = pool.Retry(func() error {
-		log.Println("try permsearch connection...")
-		_, err := http.Get("http://localhost:" + hostPort + "/jwt/check/devices/foo/r/bool")
-		if err != nil {
-			log.Println(err)
-		}
-		return err
-	})
-	return hostPort, container.Container.NetworkSettings.IPAddress, err
-}
+var ElasticSearch = docker.Elasticsearch

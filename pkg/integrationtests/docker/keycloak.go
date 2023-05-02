@@ -17,133 +17,80 @@
 package docker
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"encoding/json"
 	"errors"
-	"github.com/ory/dockertest/v3"
-	"io/ioutil"
+	"fmt"
+	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
-	"net/url"
-	"strings"
+	"net/http/httptest"
+	"runtime/debug"
 	"sync"
 	"time"
 )
 
-func Keycloak(ctx context.Context, wg *sync.WaitGroup) (hostPort string, ipAddress string, err error) {
-	log.Println("start keycloak")
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return "", "", err
-	}
-
-	//keycloak, err := pool.Run("fgseitsrancher.wifa.intern.uni-leipzig.de:5000/keycloak", "dev", []string{
-	keycloak, err := pool.Run("jboss/keycloak", "11.0.3", []string{
-		"KEYCLOAK_USER=testuser",
-		"KEYCLOAK_PASSWORD=testpw",
-		"PROXY_ADDRESS_FORWARDING=true",
-		"DB_USER=keycloak",
-	})
-	if err != nil {
-		return "", "", err
-	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-ctx.Done()
-		log.Println("DEBUG: remove container " + keycloak.Container.Name)
-		log.Println(keycloak.Close())
-	}()
-
-	//go Dockerlog(pool, ctx, keycloak, "KEYCLOAK")
-
-	hostPort = keycloak.GetPort("8080/tcp")
-	err = pool.Retry(func() error {
-		//get admin access token
-		form := url.Values{}
-		form.Add("username", "testuser")
-		form.Add("password", "testpw")
-		form.Add("grant_type", "password")
-		form.Add("client_id", "admin-cli")
-		resp, err := http.Post(
-			"http://"+keycloak.Container.NetworkSettings.IPAddress+":8080/auth/realms/master/protocol/openid-connect/token",
-			"application/x-www-form-urlencoded",
-			strings.NewReader(form.Encode()))
-		if err != nil {
-			log.Println("unable to request admin token", err)
-			return err
-		}
-		tokenMsg := map[string]interface{}{}
-		err = json.NewDecoder(resp.Body).Decode(&tokenMsg)
-		if err != nil {
-			log.Println("unable to decode admin token", err)
-			return err
-		}
-		return nil
-	})
-	return hostPort, keycloak.Container.NetworkSettings.IPAddress, err
-}
-
-//go:embed keycloak.json
-var keycloakImport []byte
-
-func ConfigKeycloak(url string) (err error) {
-	log.Println("send config to keycloak")
-	token, err := GetKeycloakAdminToken(url)
-	if err != nil {
-		return err
-	}
-	client := http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	req, err := http.NewRequest("POST", url+"/auth/admin/realms/master/partialImport", bytes.NewReader(keycloakImport))
-	if err != nil {
-		return err
-	}
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	req.WithContext(ctx)
-	req.Header.Set("Authorization", token)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		b, _ := ioutil.ReadAll(resp.Body)
-		err = errors.New(resp.Status + ": " + string(b))
-		return
-	}
-	return nil
-}
-
-func GetKeycloakAdminToken(authEndpoint string) (token string, err error) {
-	client := http.Client{
-		Timeout: 5 * time.Second,
-	}
-	resp, err := client.PostForm(authEndpoint+"/auth/realms/master/protocol/openid-connect/token", url.Values{
-		"username":   {"testuser"},
-		"password":   {"testpw"},
-		"client_id":  {"admin-cli"},
-		"grant_type": {"password"},
-	})
+func Keycloak(ctx context.Context, wg *sync.WaitGroup) (authEndpoint string, err error) {
+	router, err := getRouter()
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		b, _ := ioutil.ReadAll(resp.Body)
-		err = errors.New(resp.Status + ": " + string(b))
-		return
-	}
-	result := map[string]interface{}{}
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	token, _ = result["access_token"].(string)
-	token = "Bearer " + token
+	server := httptest.NewServer(router)
+	wg.Add(1)
+	go func() {
+		<-ctx.Done()
+		server.Close()
+		wg.Done()
+	}()
+	return server.URL, nil
+}
+
+func getRouter() (router *httprouter.Router, err error) {
+	defer func() {
+		if r := recover(); r != nil && err == nil {
+			log.Printf("%s: %s", r, debug.Stack())
+			err = errors.New(fmt.Sprint("Recovered Error: ", r))
+		}
+	}()
+	router = httprouter.New()
+
+	router.POST("/auth/realms/master/protocol/openid-connect/token", func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
+		username := request.FormValue("username")
+		var token string
+		if request.FormValue("grant_type") == "password" && username == "" {
+			http.Error(writer, "missing user name", 400)
+			return
+		}
+		if username == "admin" {
+			token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiOGUyNGZkNy1jNjJlLTRhNWQtOTQ4ZC1mZGI2ZWVkM2JmYzYiLCJleHAiOjE1MzA1MzIwMzIsIm5iZiI6MCwiaWF0IjoxNTMwNTI4NDMyLCJpc3MiOiJodHRwczovL2F1dGguc2VwbC5pbmZhaS5vcmcvYXV0aC9yZWFsbXMvbWFzdGVyIiwiYXVkIjoiZnJvbnRlbmQiLCJzdWIiOiJhZG1pbiIsInR5cCI6IkJlYXJlciIsImF6cCI6ImZyb250ZW5kIiwibm9uY2UiOiIyMmUwZWNmOC1mOGExLTQ0NDUtYWYyNy00ZDUzYmY1ZDE4YjkiLCJhdXRoX3RpbWUiOjE1MzA1Mjg0MjMsInNlc3Npb25fc3RhdGUiOiIxZDc1YTk4NC03MzU5LTQxYmUtODFiOS03MzJkODI3NGMyM2UiLCJhY3IiOiIwIiwiYWxsb3dlZC1vcmlnaW5zIjpbIioiXSwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbImNyZWF0ZS1yZWFsbSIsImFkbWluIiwiZGV2ZWxvcGVyIiwidW1hX2F1dGhvcml6YXRpb24iLCJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsibWFzdGVyLXJlYWxtIjp7InJvbGVzIjpbInZpZXctaWRlbnRpdHktcHJvdmlkZXJzIiwidmlldy1yZWFsbSIsIm1hbmFnZS1pZGVudGl0eS1wcm92aWRlcnMiLCJpbXBlcnNvbmF0aW9uIiwiY3JlYXRlLWNsaWVudCIsIm1hbmFnZS11c2VycyIsInF1ZXJ5LXJlYWxtcyIsInZpZXctYXV0aG9yaXphdGlvbiIsInF1ZXJ5LWNsaWVudHMiLCJxdWVyeS11c2VycyIsIm1hbmFnZS1ldmVudHMiLCJtYW5hZ2UtcmVhbG0iLCJ2aWV3LWV2ZW50cyIsInZpZXctdXNlcnMiLCJ2aWV3LWNsaWVudHMiLCJtYW5hZ2UtYXV0aG9yaXphdGlvbiIsIm1hbmFnZS1jbGllbnRzIiwicXVlcnktZ3JvdXBzIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJyb2xlcyI6WyJ1bWFfYXV0aG9yaXphdGlvbiIsImFkbWluIiwiY3JlYXRlLXJlYWxtIiwiZGV2ZWxvcGVyIiwidXNlciIsIm9mZmxpbmVfYWNjZXNzIl0sIm5hbWUiOiJkZiBkZmZmZiIsInByZWZlcnJlZF91c2VybmFtZSI6InNlcGwiLCJnaXZlbl9uYW1lIjoiZGYiLCJmYW1pbHlfbmFtZSI6ImRmZmZmIiwiZW1haWwiOiJzZXBsQHNlcGwuZGUifQ.kefK08rDs_PR4Ayzgh4nbK9SDKbNbQLZgH-NyPvysU4"
+		} else if username == "user" {
+			token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiOGUyNGZkNy1jNjJlLTRhNWQtOTQ4ZC1mZGI2ZWVkM2JmYzYiLCJleHAiOjE1MzA1MzIwMzIsIm5iZiI6MCwiaWF0IjoxNTMwNTI4NDMyLCJpc3MiOiJodHRwczovL2F1dGguc2VwbC5pbmZhaS5vcmcvYXV0aC9yZWFsbXMvbWFzdGVyIiwiYXVkIjoiZnJvbnRlbmQiLCJzdWIiOiJ1c2VyIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiZnJvbnRlbmQiLCJub25jZSI6IjIyZTBlY2Y4LWY4YTEtNDQ0NS1hZjI3LTRkNTNiZjVkMThiOSIsImF1dGhfdGltZSI6MTUzMDUyODQyMywic2Vzc2lvbl9zdGF0ZSI6IjFkNzVhOTg0LTczNTktNDFiZS04MWI5LTczMmQ4Mjc0YzIzZSIsImFjciI6IjAiLCJhbGxvd2VkLW9yaWdpbnMiOlsiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiY3JlYXRlLXJlYWxtIiwiZGV2ZWxvcGVyIiwidW1hX2F1dGhvcml6YXRpb24iLCJ1c2VyIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsibWFzdGVyLXJlYWxtIjp7InJvbGVzIjpbInZpZXctaWRlbnRpdHktcHJvdmlkZXJzIiwidmlldy1yZWFsbSIsIm1hbmFnZS1pZGVudGl0eS1wcm92aWRlcnMiLCJpbXBlcnNvbmF0aW9uIiwiY3JlYXRlLWNsaWVudCIsIm1hbmFnZS11c2VycyIsInF1ZXJ5LXJlYWxtcyIsInZpZXctYXV0aG9yaXphdGlvbiIsInF1ZXJ5LWNsaWVudHMiLCJxdWVyeS11c2VycyIsIm1hbmFnZS1ldmVudHMiLCJtYW5hZ2UtcmVhbG0iLCJ2aWV3LWV2ZW50cyIsInZpZXctdXNlcnMiLCJ2aWV3LWNsaWVudHMiLCJtYW5hZ2UtYXV0aG9yaXphdGlvbiIsIm1hbmFnZS1jbGllbnRzIiwicXVlcnktZ3JvdXBzIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJyb2xlcyI6WyJ1bWFfYXV0aG9yaXphdGlvbiIsImNyZWF0ZS1yZWFsbSIsImRldmVsb3BlciIsInVzZXIiLCJvZmZsaW5lX2FjY2VzcyJdLCJuYW1lIjoidXNlciIsInByZWZlcnJlZF91c2VybmFtZSI6InNlcGwiLCJnaXZlbl9uYW1lIjoiZGYiLCJmYW1pbHlfbmFtZSI6ImRmZmZmIiwiZW1haWwiOiJzZXBsQHNlcGwuZGUifQ.ieB5XGFQkvCrd3mINQoiSCrIEylz5GVoe-y7HiPDj9c"
+		} else {
+			token = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIzaUtabW9aUHpsMmRtQnBJdS1vSkY4ZVVUZHh4OUFIckVOcG5CcHM5SjYwIn0.eyJqdGkiOiJiOGUyNGZkNy1jNjJlLTRhNWQtOTQ4ZC1mZGI2ZWVkM2JmYzYiLCJleHAiOjE1MzA1MzIwMzIsIm5iZiI6MCwiaWF0IjoxNTMwNTI4NDMyLCJpc3MiOiJodHRwczovL2F1dGguc2VwbC5pbmZhaS5vcmcvYXV0aC9yZWFsbXMvbWFzdGVyIiwiYXVkIjoiZnJvbnRlbmQiLCJzdWIiOiJkZDY5ZWEwZC1mNTUzLTQzMzYtODBmMy03ZjQ1NjdmODVjN2IiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJmcm9udGVuZCIsIm5vbmNlIjoiMjJlMGVjZjgtZjhhMS00NDQ1LWFmMjctNGQ1M2JmNWQxOGI5IiwiYXV0aF90aW1lIjoxNTMwNTI4NDIzLCJzZXNzaW9uX3N0YXRlIjoiMWQ3NWE5ODQtNzM1OS00MWJlLTgxYjktNzMyZDgyNzRjMjNlIiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJjcmVhdGUtcmVhbG0iLCJhZG1pbiIsImRldmVsb3BlciIsInVtYV9hdXRob3JpemF0aW9uIiwidXNlciJdfSwicmVzb3VyY2VfYWNjZXNzIjp7Im1hc3Rlci1yZWFsbSI6eyJyb2xlcyI6WyJ2aWV3LWlkZW50aXR5LXByb3ZpZGVycyIsInZpZXctcmVhbG0iLCJtYW5hZ2UtaWRlbnRpdHktcHJvdmlkZXJzIiwiaW1wZXJzb25hdGlvbiIsImNyZWF0ZS1jbGllbnQiLCJtYW5hZ2UtdXNlcnMiLCJxdWVyeS1yZWFsbXMiLCJ2aWV3LWF1dGhvcml6YXRpb24iLCJxdWVyeS1jbGllbnRzIiwicXVlcnktdXNlcnMiLCJtYW5hZ2UtZXZlbnRzIiwibWFuYWdlLXJlYWxtIiwidmlldy1ldmVudHMiLCJ2aWV3LXVzZXJzIiwidmlldy1jbGllbnRzIiwibWFuYWdlLWF1dGhvcml6YXRpb24iLCJtYW5hZ2UtY2xpZW50cyIsInF1ZXJ5LWdyb3VwcyJdfSwiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwicm9sZXMiOlsidW1hX2F1dGhvcml6YXRpb24iLCJhZG1pbiIsImNyZWF0ZS1yZWFsbSIsImRldmVsb3BlciIsInVzZXIiLCJvZmZsaW5lX2FjY2VzcyJdLCJuYW1lIjoiZGYgZGZmZmYiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJzZXBsIiwiZ2l2ZW5fbmFtZSI6ImRmIiwiZmFtaWx5X25hbWUiOiJkZmZmZiIsImVtYWlsIjoic2VwbEBzZXBsLmRlIn0.eOwKV7vwRrWr8GlfCPFSq5WwR_p-_rSJURXCV1K7ClBY5jqKQkCsRL2V4YhkP1uS6ECeSxF7NNOLmElVLeFyAkvgSNOUkiuIWQpMTakNKynyRfH0SrdnPSTwK2V1s1i4VjoYdyZWXKNjeT2tUUX9eCyI5qOf_Dzcai5FhGCSUeKpV0ScUj5lKrn56aamlW9IdmbFJ4VwpQg2Y843Vc0TqpjK9n_uKwuRcQd9jkKHkbwWQ-wyJEbFWXHjQ6LnM84H0CQ2fgBqPPfpQDKjGSUNaCS-jtBcbsBAWQSICwol95BuOAqVFMucx56Wm-OyQOuoQ1jaLt2t-Uxtr-C9wKJWHQ"
+		}
+		err = json.NewEncoder(writer).Encode(OpenidToken{
+			AccessToken:      token,
+			ExpiresIn:        10 * float64(time.Hour),
+			RefreshExpiresIn: 5 * float64(time.Hour),
+			RefreshToken:     "",
+			TokenType:        "",
+			RequestTime:      time.Now(),
+		})
+		if err != nil {
+			log.Println("ERROR: unable to encode response", err)
+		}
+	})
+
 	return
+}
+
+type OpenidToken struct {
+	AccessToken      string    `json:"access_token"`
+	ExpiresIn        float64   `json:"expires_in"`
+	RefreshExpiresIn float64   `json:"refresh_expires_in"`
+	RefreshToken     string    `json:"refresh_token"`
+	TokenType        string    `json:"token_type"`
+	RequestTime      time.Time `json:"-"`
 }
