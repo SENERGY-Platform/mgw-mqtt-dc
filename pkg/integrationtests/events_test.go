@@ -79,7 +79,7 @@ func TestEventForwarding(t *testing.T) {
 		return
 	}
 	mgwMessages := util.NewSyncMap[[]string]()
-	err = mgwListener.Subscribe("#", 2, func(topic string, payload []byte) {
+	err = mgwListener.Subscribe("#", 2, func(topic string, _ bool, payload []byte) {
 		if topic != "device-manager/device/test" {
 			mgwMessages.Update(topic, func(messages []string) []string {
 				return append(messages, string(payload))

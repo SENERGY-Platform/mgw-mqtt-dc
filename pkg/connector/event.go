@@ -18,11 +18,19 @@ package connector
 
 import "log"
 
-func (this *Connector) EventHandler(topic string, payload []byte) {
+func (this *Connector) EventHandler(topic string, retained bool, payload []byte) {
 	go func() {
 		desc, ok := this.eventTopicRegister.Get(topic)
 		if !ok {
 			return
+		}
+		state, ignore := this.onlineCheck.CheckAndStoreState(desc, retained, payload)
+		if !ignore {
+			err := this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), string(state))
+			if err != nil {
+				log.Println("ERROR: unable to send device info to mgw", err)
+				this.mgwClient.SendClientError("unable to send device info to mgw: " + err.Error())
+			}
 		}
 		err := this.mgwClient.SendEvent(desc.GetLocalDeviceId(), desc.GetLocalServiceId(), payload)
 		if err != nil {

@@ -59,9 +59,15 @@ type Config struct {
 	GeneratorDeviceDescriptionsDir string `json:"generator_device_descriptions_dir"`
 
 	GeneratorTruncateDevicePrefix string `json:"generator_truncate_device_prefix"`
+
+	FallbackFile                       string `json:"fallback_file"`
+	EnableJwtOnlineCheck               bool   `json:"enable_jwt_online_check"` //only valid if GeneratorUse is configured
+	DeviceRepoCacheDuration            string `json:"device_repo_cache_duration"`
+	OnlineCheckFunctionId              string `json:"online_check_function_id"`
+	OnlineCheckBooleanCharacteristicId string `json:"online_check_boolean_characteristic_id"`
 }
 
-//loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)
+// loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)
 func Load(location string) (config Config, err error) {
 	file, error := os.Open(location)
 	if error != nil {

@@ -75,7 +75,7 @@ func TestCorrelationIdMatching(t *testing.T) {
 		return
 	}
 	mqttMessages := util.NewSyncMap[[]string]()
-	err = mqttClient.Subscribe("#", 2, func(topic string, payload []byte) {
+	err = mqttClient.Subscribe("#", 2, func(topic string, _ bool, payload []byte) {
 		mqttMessages.Update(topic, func(messages []string) []string {
 			return append(messages, string(payload))
 		})
@@ -91,7 +91,7 @@ func TestCorrelationIdMatching(t *testing.T) {
 		return
 	}
 	mgwMessages := util.NewSyncMap[[]string]()
-	err = mgwMqttClient.Subscribe("#", 2, func(topic string, payload []byte) {
+	err = mgwMqttClient.Subscribe("#", 2, func(topic string, _ bool, payload []byte) {
 		if topic != "device-manager/device/test" && !strings.HasPrefix(topic, "command/") && !strings.HasPrefix(topic, "event/") {
 			mgwMessages.Update(topic, func(messages []string) []string {
 				return append(messages, string(payload))

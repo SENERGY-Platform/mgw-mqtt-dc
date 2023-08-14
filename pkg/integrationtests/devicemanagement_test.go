@@ -68,7 +68,7 @@ func TestInitialDeviceInfo(t *testing.T) {
 		return
 	}
 	mqttMessages := util.NewSyncMap[[]string]()
-	err = mqttListener.Subscribe("#", 2, func(topic string, payload []byte) {
+	err = mqttListener.Subscribe("#", 2, func(topic string, _ bool, payload []byte) {
 		mqttMessages.Update(topic, func(messages []string) []string {
 			return append(messages, string(payload))
 		})
@@ -254,7 +254,7 @@ func TestTimedDeviceInfoUpdate(t *testing.T) {
 		return
 	}
 	mqttMessages := util.NewSyncMap[[]string]()
-	err = mqttListener.Subscribe("#", 2, func(topic string, payload []byte) {
+	err = mqttListener.Subscribe("#", 2, func(topic string, _ bool, payload []byte) {
 		mqttMessages.Update(topic, func(messages []string) []string {
 			return append(messages, string(payload))
 		})
@@ -494,7 +494,7 @@ func TestTimedDeviceInfoUpdateWithDelete(t *testing.T) {
 		return
 	}
 	mqttMessages := util.NewSyncMap[[]string]()
-	err = mqttListener.Subscribe("#", 2, func(topic string, payload []byte) {
+	err = mqttListener.Subscribe("#", 2, func(topic string, _ bool, payload []byte) {
 		mqttMessages.Update(topic, func(messages []string) []string {
 			return append(messages, string(payload))
 		})
@@ -729,7 +729,7 @@ func TestSignaledDeviceInfoUpdate(t *testing.T) {
 		return
 	}
 	mqttMessages := util.NewSyncMap[[]string]()
-	err = mqttListener.Subscribe("#", 2, func(topic string, payload []byte) {
+	err = mqttListener.Subscribe("#", 2, func(topic string, _ bool, payload []byte) {
 		mqttMessages.Update(topic, func(messages []string) []string {
 			return append(messages, string(payload))
 		})
@@ -968,7 +968,7 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 		return
 	}
 	mqttMessages := util.NewSyncMap[[]string]()
-	err = mqttListener.Subscribe("#", 2, func(topic string, payload []byte) {
+	err = mqttListener.Subscribe("#", 2, func(topic string, _ bool, payload []byte) {
 		mqttMessages.Update(topic, func(messages []string) []string {
 			return append(messages, string(payload))
 		})

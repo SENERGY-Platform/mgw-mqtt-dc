@@ -80,7 +80,7 @@ func EqualDeviceDesc(old DeviceDescription, topic DeviceDescription) bool {
 }
 
 type MqttClient interface {
-	Subscribe(topic string, qos byte, handler func(topic string, payload []byte)) error
+	Subscribe(topic string, qos byte, handler func(topic string, retained bool, payload []byte)) error
 	Unsubscribe(topic string) error
 	Publish(topic string, qos byte, retained bool, payload []byte) error
 }

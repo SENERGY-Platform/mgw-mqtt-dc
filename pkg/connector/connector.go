@@ -19,6 +19,9 @@ package connector
 import (
 	"context"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/connector/onlinechecker"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/auth"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mqtt"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription"
@@ -43,6 +46,14 @@ type Connector struct {
 	commandTopicRegister  *util.SyncMap[TopicDescription]
 	correlationStore      *util.SyncMap[[]CorrelationId]
 	MaxCorrelationIdAge   time.Duration
+	onlineCheck           OnlineChecker
+	devicerepo            *devicerepo.DeviceRepo
+}
+
+type OnlineChecker interface {
+	Preprocess(events []TopicDescription) error
+	LoadState(desc TopicDescription) (state mgw.State, found bool)
+	CheckAndStoreState(desc TopicDescription, retained bool, payload []byte) (state mgw.State, ignore bool)
 }
 
 func New(ctx context.Context, config configuration.Config) (result *Connector, err error) {
@@ -50,6 +61,24 @@ func New(ctx context.Context, config configuration.Config) (result *Connector, e
 }
 
 func NewWithFactories(ctx context.Context, config configuration.Config, topicDescProvider TopicDescriptionProvider, mgwFactory MgwFactory, mqttFactory MqttFactory) (result *Connector, err error) {
+	if config.MaxCorrelationIdAge == "" {
+		config.MaxCorrelationIdAge = "90s"
+	}
+	if config.DeviceRepoCacheDuration == "" {
+		config.DeviceRepoCacheDuration = "10m"
+	}
+
+	a := &auth.Auth{}
+	repo, err := devicerepo.New(config, a)
+	if err != nil {
+		return result, err
+	}
+
+	checker, err := onlinechecker.New[TopicDescription](config, repo)
+	if err != nil {
+		return result, err
+	}
+
 	commandMqttClient, err := mqttFactory(ctx, config.MqttBroker, config.MqttCmdClientId, config.MqttUser, config.MqttPw)
 	if err != nil {
 		return result, err
@@ -69,8 +98,9 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 		responseTopicRegister: util.NewSyncMap[TopicDescription](),
 		commandTopicRegister:  util.NewSyncMap[TopicDescription](),
 		correlationStore:      util.NewSyncMap[[]CorrelationId](),
+		onlineCheck:           checker,
+		devicerepo:            repo,
 	}
-
 	result.MaxCorrelationIdAge, err = time.ParseDuration(config.MaxCorrelationIdAge)
 	if err != nil {
 		return result, err

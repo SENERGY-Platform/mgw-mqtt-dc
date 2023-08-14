@@ -21,9 +21,9 @@ import (
 	"log"
 )
 
-func (this *Mqtt) Subscribe(topic string, qos byte, handler func(topic string, payload []byte)) error {
+func (this *Mqtt) Subscribe(topic string, qos byte, handler func(topic string, retained bool, payload []byte)) error {
 	f := func(client paho.Client, message paho.Message) {
-		handler(message.Topic(), message.Payload())
+		handler(message.Topic(), message.Retained(), message.Payload())
 	}
 	token := this.mqtt.Subscribe(topic, qos, f)
 	if token.Wait() && token.Error() != nil {

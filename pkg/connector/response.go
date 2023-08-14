@@ -21,7 +21,7 @@ import (
 	"log"
 )
 
-func (this *Connector) ResponseHandler(topic string, payload []byte) {
+func (this *Connector) ResponseHandler(topic string, retained bool, payload []byte) {
 	go func() {
 		desc, isRegistered := this.responseTopicRegister.Get(topic)
 		if !isRegistered {

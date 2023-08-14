@@ -18,11 +18,10 @@ package connector
 
 import (
 	"errors"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"log"
 	"net/url"
 )
-
-const DeviceState = "online"
 
 func (this *Connector) updateTopics() (err error) {
 	this.updateTopicsMux.Lock()
@@ -41,6 +40,12 @@ func (this *Connector) updateTopics() (err error) {
 	}
 
 	events, commands, responses := this.splitTopicDescriptions(topics)
+
+	err = this.onlineCheck.Preprocess(events)
+	if err != nil {
+		return err
+	}
+
 	oldDevices := map[string]TopicDescription{}
 	usedDevices := map[string]TopicDescription{}
 
@@ -128,7 +133,11 @@ func (this *Connector) updateTopics() (err error) {
 
 	//find new devices to add/update
 	for id, desc := range usedDevices {
-		err = this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), DeviceState)
+		state := mgw.Online
+		if temp, ok := this.onlineCheck.LoadState(desc); ok {
+			state = temp
+		}
+		err = this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), string(state))
 		if err != nil {
 			log.Println("ERROR: unable to send device info to mgw", err)
 			this.mgwClient.SendClientError("unable to send device info to mgw: " + err.Error())

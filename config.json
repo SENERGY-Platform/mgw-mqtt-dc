@@ -27,5 +27,10 @@
     "generator_device_repository_url": "https://api.senergy.infai.org/device-repository",
     "generator_device_descriptions_dir": "topicdescriptions/generated",
 
-    "generator_truncate_device_prefix": ""
+    "generator_truncate_device_prefix": "",
+
+    "fallback_file": "fallback.json",
+    "device_repo_cache_duration": "10m",
+    "online_check_function_id": "urn:infai:ses:measuring-function:b8791b17-cf01-467f-87cf-da2271fffb6d",
+    "online_check_boolean_characteristic_id": "urn:infai:ses:characteristic:7dc1bb7e-b256-408a-a6f9-044dc60fdcf5"
 }

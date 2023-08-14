@@ -43,7 +43,10 @@ func TestConnectorInit(t *testing.T) {
 			"c:b",
 		}, nil
 	}), NewMgwFactory(newMgwMock), NewMqttFactory(newMqttMock))
-	fmt.Println(err, *temp)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 	j, err := json.Marshal(temp)
 	fmt.Println(err, string(j))
 }
@@ -165,7 +168,7 @@ func (this *MgwMock) SendCommandError(correlationId string, message string) {
 type MqttMock struct {
 }
 
-func (this MqttMock) Subscribe(topic string, qos byte, handler func(topic string, payload []byte)) error {
+func (this MqttMock) Subscribe(topic string, qos byte, handler func(topic string, retained bool, payload []byte)) error {
 	log.Println("Subscribe", topic)
 	return nil
 }
