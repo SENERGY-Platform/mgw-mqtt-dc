@@ -18,11 +18,11 @@ package docker
 
 import (
 	"context"
-	"github.com/SENERGY-Platform/permission-search/lib/tests/docker"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func DeviceManager(ctx context.Context, wg *sync.WaitGroup, kafkaUrl string, deviceRepoUrl string, permsearch string) (hostPort string, ipAddress string, err error) {
@@ -49,10 +49,11 @@ func DeviceManager(ctx context.Context, wg *sync.WaitGroup, kafkaUrl string, dev
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container device-manager", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 10*time.Second)
+		log.Println("DEBUG: remove container device-manager", c.Terminate(timeout))
 	}()
 
-	err = docker.Dockerlog(ctx, c, "DEVICE-MANAGER")
+	//err = docker.Dockerlog(ctx, c, "DEVICE-MANAGER")
 	if err != nil {
 		return "", "", err
 	}
@@ -94,12 +95,12 @@ func DeviceManagerWithDependenciesAndKafka(basectx context.Context, wg *sync.Wai
 		return kafkaUrl, managerUrl, repoUrl, searchUrl, err
 	}
 
-	_, elasticIp, err := ElasticSearch(ctx, wg)
+	_, elasticIp, err := OpenSearch(ctx, wg)
 	if err != nil {
 		return kafkaUrl, managerUrl, repoUrl, searchUrl, err
 	}
 
-	_, permIp, err := PermSearch(ctx, wg, true, kafkaUrl, elasticIp)
+	_, permIp, err := PermSearch(ctx, wg, false, kafkaUrl, elasticIp)
 	if err != nil {
 		return kafkaUrl, managerUrl, repoUrl, searchUrl, err
 	}

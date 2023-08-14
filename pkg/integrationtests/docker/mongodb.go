@@ -22,6 +22,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func MongoDB(ctx context.Context, wg *sync.WaitGroup) (hostport string, containerip string, err error) {
@@ -46,7 +47,8 @@ func MongoDB(ctx context.Context, wg *sync.WaitGroup) (hostport string, containe
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container mongo", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 10*time.Second)
+		log.Println("DEBUG: remove container mongo", c.Terminate(timeout))
 	}()
 
 	containerip, err = c.ContainerIP(ctx)

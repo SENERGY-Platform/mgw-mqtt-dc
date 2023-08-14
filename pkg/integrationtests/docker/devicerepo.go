@@ -18,11 +18,11 @@ package docker
 
 import (
 	"context"
-	"github.com/SENERGY-Platform/permission-search/lib/tests/docker"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func DeviceRepo(ctx context.Context, wg *sync.WaitGroup, kafkaUrl string, mongoUrl string, permsearch string) (hostPort string, ipAddress string, err error) {
@@ -48,9 +48,10 @@ func DeviceRepo(ctx context.Context, wg *sync.WaitGroup, kafkaUrl string, mongoU
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container device-repository", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 10*time.Second)
+		log.Println("DEBUG: remove container device-repository", c.Terminate(timeout))
 	}()
-	err = docker.Dockerlog(ctx, c, "DEVICE-REPO")
+	//err = docker.Dockerlog(ctx, c, "DEVICE-REPO")
 	if err != nil {
 		return "", "", err
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func Mqtt(ctx context.Context, wg *sync.WaitGroup) (hostPort string, ipAddress string, err error) {
@@ -26,7 +27,8 @@ func Mqtt(ctx context.Context, wg *sync.WaitGroup) (hostPort string, ipAddress s
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container mqtt", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 10*time.Second)
+		log.Println("DEBUG: remove container mqtt", c.Terminate(timeout))
 	}()
 
 	ipAddress, err = c.ContainerIP(ctx)
