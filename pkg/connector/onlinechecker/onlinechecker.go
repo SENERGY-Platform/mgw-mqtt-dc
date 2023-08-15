@@ -18,7 +18,6 @@ package onlinechecker
 
 import (
 	"errors"
-	"github.com/SENERGY-Platform/event-worker/pkg/eventrepo/fog"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/connector/onlinechecker/marshaller"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
@@ -72,7 +71,7 @@ type Checker[T TopicDesc] struct {
 }
 
 func (this *Checker[T]) Preprocess(topics []T) error {
-	if !this.config.EnableJwtOnlineCheck {
+	if !this.config.EnableLwtOnlineCheck {
 		return nil
 	}
 	this.mux.Lock()
@@ -90,6 +89,9 @@ func (this *Checker[T]) Preprocess(topics []T) error {
 			if variableContainsFunction(output.ContentVariable, this.config.OnlineCheckFunctionId) {
 				this.serviceImplementsOnlineFunctionIndex[topic.GetDeviceTypeId()+"."+topic.GetLocalServiceId()] = true
 				this.deviceUsesOnlineFunctionIndex[topic.GetLocalDeviceId()] = true
+				if _, ok := this.knownStates[topic.GetLocalDeviceId()]; !ok {
+					this.knownStates[topic.GetLocalDeviceId()] = mgw.Offline
+				}
 			}
 		}
 	}
@@ -109,7 +111,7 @@ func variableContainsFunction(variable models.ContentVariable, functionId string
 }
 
 func (this *Checker[T]) LoadState(desc T) (state mgw.State, found bool) {
-	if !this.config.EnableJwtOnlineCheck {
+	if !this.config.EnableLwtOnlineCheck {
 		return mgw.Online, true
 	}
 	this.mux.Lock()
@@ -119,7 +121,7 @@ func (this *Checker[T]) LoadState(desc T) (state mgw.State, found bool) {
 }
 
 func (this *Checker[T]) CheckAndStoreState(desc T, retained bool, payload []byte) (state mgw.State, ignore bool) {
-	if !this.config.EnableJwtOnlineCheck {
+	if !this.config.EnableLwtOnlineCheck {
 		return "", true
 	}
 	if !this.deviceUsesOnlineFunction(desc) {
@@ -137,7 +139,8 @@ func (this *Checker[T]) CheckAndStoreState(desc T, retained bool, payload []byte
 		debug.PrintStack()
 		return "", true
 	}
-	msg, err := (&fog.Impl{}).SerializeMessage(string(payload), service)
+
+	msg, err := this.serialize(service, payload)
 	if err != nil {
 		log.Println("ERROR:", err)
 		debug.PrintStack()

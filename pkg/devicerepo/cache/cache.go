@@ -91,9 +91,10 @@ func (this *Cache) useWithFallback(key string, expiration time.Duration, getter 
 	}
 	temp, err := getter()
 	if err != nil {
-		temp, err = this.fallback.Get(key)
-		if err != nil {
-			return err
+		var temperr error
+		temp, temperr = this.fallback.Get(key)
+		if temperr != nil {
+			return errors.Join(err, temperr)
 		}
 	} else {
 		err = this.fallback.Set(key, temp)

@@ -19,11 +19,9 @@ package devicerepo
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/SENERGY-Platform/event-worker/pkg/cache"
-	"github.com/SENERGY-Platform/event-worker/pkg/model"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/auth"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/cache"
 	"github.com/SENERGY-Platform/models/go/models"
 	"io"
 	"log"
@@ -36,7 +34,8 @@ import (
 
 func New(config configuration.Config, auth *auth.Auth) (result *DeviceRepo, err error) {
 	result = &DeviceRepo{
-		auth: auth,
+		auth:   auth,
+		config: config,
 	}
 	cacheDuration, err := time.ParseDuration(config.DeviceRepoCacheDuration)
 	if err != nil {
@@ -81,13 +80,13 @@ func (this *DeviceRepo) GetJson(token string, endpoint string, result interface{
 	}
 	if resp.StatusCode >= 300 {
 		temp, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("%w: %v", model.MessageIgnoreError, strings.TrimSpace(string(temp)))
+		return errors.New(strings.TrimSpace(string(temp)))
 	}
 	err = json.NewDecoder(resp.Body).Decode(result)
 	if err != nil {
 		log.Println("ERROR:", err.Error())
 		debug.PrintStack()
-		return fmt.Errorf("%w: %v", model.MessageIgnoreError, err.Error())
+		return errors.New(err.Error())
 	}
 	return nil
 }

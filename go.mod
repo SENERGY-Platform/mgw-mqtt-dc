@@ -6,10 +6,10 @@ toolchain go1.21.0
 
 require (
 	github.com/SENERGY-Platform/converter v0.0.0-20230413113429-b490a96aabba
-	github.com/SENERGY-Platform/event-worker v0.0.0-20230616090946-cbc789c77288
 	github.com/SENERGY-Platform/marshaller v0.0.0-20230413113821-f8a7bc020739
 	github.com/SENERGY-Platform/models/go v0.0.0-20230724134144-c26fd506045f
 	github.com/SENERGY-Platform/permission-search v0.0.0-20230814064430-b5ed112b136a
+	github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20230815113517-0ac2d5f283fa
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -21,10 +21,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Knetic/govaluate v3.0.0+incompatible // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
-	github.com/RyanCarrier/dijkstra v1.2.0 // indirect
-	github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20230414071410-091d73d966ea // indirect
-	github.com/SENERGY-Platform/process-deployment v0.0.0-20230414093210-43c42be333f9 // indirect
-	github.com/beevik/etree v1.1.0 // indirect
+	github.com/RyanCarrier/dijkstra v1.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/containerd/containerd v1.7.3 // indirect
@@ -39,6 +36,7 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/moby/patternmatcher v0.5.0 // indirect
@@ -51,6 +49,7 @@ require (
 	github.com/opensearch-project/opensearch-go v1.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/segmentio/kafka-go v0.4.42 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b // indirect

@@ -19,6 +19,7 @@ package configuration
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/SENERGY-Platform/models/go/models"
 	"log"
 	"os"
 	"reflect"
@@ -61,10 +62,13 @@ type Config struct {
 	GeneratorTruncateDevicePrefix string `json:"generator_truncate_device_prefix"`
 
 	FallbackFile                       string `json:"fallback_file"`
-	EnableJwtOnlineCheck               bool   `json:"enable_jwt_online_check"` //only valid if GeneratorUse is configured
+	EnableLwtOnlineCheck               bool   `json:"enable_lwt_online_check"` //only valid if GeneratorUse is configured
 	DeviceRepoCacheDuration            string `json:"device_repo_cache_duration"`
 	OnlineCheckFunctionId              string `json:"online_check_function_id"`
 	OnlineCheckBooleanCharacteristicId string `json:"online_check_boolean_characteristic_id"`
+
+	ProtocolDescription   models.Protocol `json:"protocol_description"`
+	ProtocolDataFieldName string          `json:"protocol_data_field_name"`
 }
 
 // loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)

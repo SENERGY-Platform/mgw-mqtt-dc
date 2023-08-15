@@ -29,8 +29,29 @@
 
     "generator_truncate_device_prefix": "",
 
+    "enable_lwt_online_check": false,
     "fallback_file": "fallback.json",
     "device_repo_cache_duration": "10m",
     "online_check_function_id": "urn:infai:ses:measuring-function:b8791b17-cf01-467f-87cf-da2271fffb6d",
-    "online_check_boolean_characteristic_id": "urn:infai:ses:characteristic:7dc1bb7e-b256-408a-a6f9-044dc60fdcf5"
+    "online_check_boolean_characteristic_id": "urn:infai:ses:characteristic:7dc1bb7e-b256-408a-a6f9-044dc60fdcf5",
+
+    "protocol_description": {
+        "constraints": [
+            "senergy_connector_local_id"
+        ],
+        "handler": "connector",
+        "id": "urn:infai:ses:protocol:f3a63aeb-187e-4dd9-9ef5-d97a6eb6292b",
+        "name": "standard-connector",
+        "protocol_segments": [
+            {
+                "id": "urn:infai:ses:protocol-segment:9956d8b5-46fa-4381-a227-c1df69808997",
+                "name": "metadata"
+            },
+            {
+                "id": "urn:infai:ses:protocol-segment:0d211842-cef8-41ec-ab6b-9dbc31bc3a65",
+                "name": "data"
+            }
+        ]
+    },
+    "protocol_data_field_name": "data"
 }
