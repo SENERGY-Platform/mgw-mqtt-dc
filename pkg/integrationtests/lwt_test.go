@@ -80,7 +80,6 @@ func TestLwt(t *testing.T) {
 	config.GeneratorAuthPassword = "testpw"
 	config.GeneratorAuthEndpoint = keycloakUrl
 	config.GeneratorUse = true
-	config.EnableLwtOnlineCheck = true
 
 	tempDir := t.TempDir()
 

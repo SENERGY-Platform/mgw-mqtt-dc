@@ -62,7 +62,6 @@ type Config struct {
 	GeneratorTruncateDevicePrefix string `json:"generator_truncate_device_prefix"`
 
 	FallbackFile                       string `json:"fallback_file"`
-	EnableLwtOnlineCheck               bool   `json:"enable_lwt_online_check"` //only valid if GeneratorUse is configured
 	DeviceRepoCacheDuration            string `json:"device_repo_cache_duration"`
 	OnlineCheckFunctionId              string `json:"online_check_function_id"`
 	OnlineCheckBooleanCharacteristicId string `json:"online_check_boolean_characteristic_id"`

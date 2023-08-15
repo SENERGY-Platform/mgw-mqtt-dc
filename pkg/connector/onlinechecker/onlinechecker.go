@@ -71,7 +71,7 @@ type Checker[T TopicDesc] struct {
 }
 
 func (this *Checker[T]) Preprocess(topics []T) error {
-	if !this.config.EnableLwtOnlineCheck {
+	if !this.config.GeneratorUse {
 		return nil
 	}
 	this.mux.Lock()
@@ -111,7 +111,7 @@ func variableContainsFunction(variable models.ContentVariable, functionId string
 }
 
 func (this *Checker[T]) LoadState(desc T) (state mgw.State, found bool) {
-	if !this.config.EnableLwtOnlineCheck {
+	if !this.config.GeneratorUse {
 		return mgw.Online, true
 	}
 	this.mux.Lock()
@@ -121,7 +121,7 @@ func (this *Checker[T]) LoadState(desc T) (state mgw.State, found bool) {
 }
 
 func (this *Checker[T]) CheckAndStoreState(desc T, retained bool, payload []byte) (state mgw.State, ignore bool) {
-	if !this.config.EnableLwtOnlineCheck {
+	if !this.config.GeneratorUse {
 		return "", true
 	}
 	if !this.deviceUsesOnlineFunction(desc) {
