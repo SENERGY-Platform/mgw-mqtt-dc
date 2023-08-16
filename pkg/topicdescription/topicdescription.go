@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -30,9 +31,9 @@ import (
 	"strings"
 )
 
-func Load(config configuration.Config) (topicDescriptions []model.TopicDescription, err error) {
+func Load(config configuration.Config, deviceRepo *devicerepo.DeviceRepo) (topicDescriptions []model.TopicDescription, err error) {
 	if config.GeneratorUse {
-		return LoadWithGenerator(config)
+		return LoadWithGenerator(config, deviceRepo)
 	} else {
 		return LoadDir(config.DeviceDescriptionsDir)
 	}

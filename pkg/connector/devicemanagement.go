@@ -29,7 +29,7 @@ func (this *Connector) updateTopics() (err error) {
 	if this.topicDescProvider == nil {
 		return errors.New("missing topicDescProvider")
 	}
-	topics, err := this.topicDescProvider(this.config)
+	topics, err := this.topicDescProvider(this.config, this.devicerepo)
 	if err != nil {
 		return err
 	}

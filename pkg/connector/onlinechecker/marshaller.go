@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 InfAI (CC SES)
+ * Copyright 2023 InfAI (CC SES)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package marshaller
+package onlinechecker
 
 import (
 	"fmt"
@@ -28,10 +28,17 @@ import (
 
 type Marshaller struct {
 	marshaller *v2.Marshaller
-	deviceRepo DeviceRepo
+	deviceRepo DeviceRepoForMarshaller
 }
 
-func New(deviceRepo DeviceRepo) (result *Marshaller, err error) {
+type DeviceRepoForMarshaller interface {
+	GetCharacteristic(id string) (characteristic models.Characteristic, err error)
+	GetConcept(id string) (concept models.Concept, err error)
+	GetConceptIdOfFunction(id string) string
+	GetAspectNode(id string) (models.AspectNode, error)
+}
+
+func NewMarshaller(deviceRepo DeviceRepoForMarshaller) (result *Marshaller, err error) {
 	c, err := converter.New()
 	if err != nil {
 		return result, err
@@ -41,13 +48,6 @@ func New(deviceRepo DeviceRepo) (result *Marshaller, err error) {
 		deviceRepo: deviceRepo,
 	}
 	return result, nil
-}
-
-type DeviceRepo interface {
-	GetCharacteristic(id string) (characteristic models.Characteristic, err error)
-	GetConcept(id string) (concept models.Concept, err error)
-	GetConceptIdOfFunction(id string) string
-	GetAspectNode(id string) (models.AspectNode, error)
 }
 
 func (this *Marshaller) Unmarshal(service models.Service, functionId string, targetCharacteristic string, message map[string]interface{}) (value interface{}, err error) {

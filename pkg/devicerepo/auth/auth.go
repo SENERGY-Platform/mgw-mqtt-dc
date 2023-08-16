@@ -19,7 +19,6 @@ package auth
 import (
 	"encoding/json"
 	"errors"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"io"
 	"log"
 	"net/http"
@@ -28,6 +27,11 @@ import (
 )
 
 type Auth struct {
+	Credentials      Credentials
+	CurrentTokenInfo TokenInfo
+}
+
+type TokenInfo struct {
 	AccessToken      string    `json:"access_token"`
 	ExpiresIn        float64   `json:"expires_in"`
 	RefreshExpiresIn float64   `json:"refresh_expires_in"`
@@ -36,54 +40,62 @@ type Auth struct {
 	RequestTime      time.Time `json:"-"`
 }
 
-func (openid *Auth) EnsureAccess(config configuration.Config) (token string, err error) {
-	duration := time.Now().Sub(openid.RequestTime).Seconds()
+type Credentials struct {
+	AuthEndpoint     string
+	AuthClientId     string
+	AuthClientSecret string
+	Username         string
+	Password         string
+}
 
-	if openid.AccessToken != "" && openid.ExpiresIn-5 > duration {
-		token = "Bearer " + openid.AccessToken
+func (this *Auth) EnsureAccess() (token string, err error) {
+	duration := time.Now().Sub(this.CurrentTokenInfo.RequestTime).Seconds()
+
+	if this.CurrentTokenInfo.AccessToken != "" && this.CurrentTokenInfo.ExpiresIn-5 > duration {
+		token = "Bearer " + this.CurrentTokenInfo.AccessToken
 		return
 	}
 
-	if openid.RefreshToken != "" && openid.RefreshExpiresIn-5 > duration {
-		log.Println("refresh token", openid.RefreshExpiresIn, duration)
-		err = refreshOpenidToken(openid, config)
+	if this.CurrentTokenInfo.RefreshToken != "" && this.CurrentTokenInfo.RefreshExpiresIn-5 > duration {
+		log.Println("refresh token", this.CurrentTokenInfo.RefreshExpiresIn, duration)
+		err = refreshOpenidToken(&this.CurrentTokenInfo, this.Credentials)
 		if err != nil {
 			log.Println("WARNING: unable to use refreshtoken", err)
 		} else {
-			token = "Bearer " + openid.AccessToken
+			token = "Bearer " + this.CurrentTokenInfo.AccessToken
 			return
 		}
 	}
 
 	log.Println("get new access token")
-	err = getOpenidToken(openid, config)
+	err = getOpenidToken(&this.CurrentTokenInfo, this.Credentials)
 	if err != nil {
 		log.Println("ERROR: unable to get new access token", err)
-		openid = &Auth{}
+		this = &Auth{}
 	}
-	token = "Bearer " + openid.AccessToken
+	token = "Bearer " + this.CurrentTokenInfo.AccessToken
 	return
 }
 
-func getOpenidToken(token *Auth, config configuration.Config) (err error) {
+func getOpenidToken(token *TokenInfo, cred Credentials) (err error) {
 	requesttime := time.Now()
 	var values url.Values
-	if config.GeneratorAuthClientSecret == "" {
+	if cred.AuthClientSecret == "" {
 		values = url.Values{
-			"client_id":  {config.GeneratorAuthClientId},
-			"username":   {config.GeneratorAuthUsername},
-			"password":   {config.GeneratorAuthPassword},
+			"client_id":  {cred.AuthClientId},
+			"username":   {cred.Username},
+			"password":   {cred.Password},
 			"grant_type": {"password"},
 		}
 	} else {
 		values = url.Values{
-			"client_id":     {config.GeneratorAuthClientId},
-			"client_secret": {config.GeneratorAuthClientSecret},
+			"client_id":     {cred.AuthClientId},
+			"client_secret": {cred.AuthClientSecret},
 			"grant_type":    {"client_credentials"},
 		}
 
 	}
-	resp, err := http.PostForm(config.GeneratorAuthEndpoint+"/auth/realms/master/protocol/openid-connect/token", values)
+	resp, err := http.PostForm(cred.AuthEndpoint+"/auth/realms/master/protocol/openid-connect/token", values)
 
 	if err != nil {
 		log.Println("ERROR: getOpenidToken::PostForm()", err)
@@ -100,10 +112,10 @@ func getOpenidToken(token *Auth, config configuration.Config) (err error) {
 	return
 }
 
-func refreshOpenidToken(token *Auth, config configuration.Config) (err error) {
+func refreshOpenidToken(token *TokenInfo, cred Credentials) (err error) {
 	requesttime := time.Now()
-	resp, err := http.PostForm(config.GeneratorAuthEndpoint+"/auth/realms/master/protocol/openid-connect/token", url.Values{
-		"client_id":     {config.GeneratorAuthClientId},
+	resp, err := http.PostForm(cred.AuthEndpoint+"/auth/realms/master/protocol/openid-connect/token", url.Values{
+		"client_id":     {cred.AuthClientId},
 		"refresh_token": {token.RefreshToken},
 		"grant_type":    {"refresh_token"},
 	})

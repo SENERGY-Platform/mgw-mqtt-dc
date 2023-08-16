@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"log"
 	"strings"
@@ -35,7 +36,7 @@ func TestConnectorInit(t *testing.T) {
 		MgwMqttPw:       "",
 		MgwMqttClientId: "",
 		Debug:           false,
-	}, NewTopicDescriptionProvider(func(config configuration.Config) (desc []MockDesc, err error) {
+	}, NewTopicDescriptionProvider(func(config configuration.Config, repo *devicerepo.DeviceRepo) (desc []MockDesc, err error) {
 		return []MockDesc{
 			"c:a",
 			"e:foo",

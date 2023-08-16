@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/connector"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationtests/docker"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationtests/mocks"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
@@ -78,7 +79,7 @@ func TestInitialDeviceInfo(t *testing.T) {
 		return
 	}
 
-	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config) ([]mocks.TopicDesc, error) {
+	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config, repo *devicerepo.DeviceRepo) ([]mocks.TopicDesc, error) {
 		return []mocks.TopicDesc{
 			{
 				DeviceName: "d1",
@@ -265,7 +266,7 @@ func TestTimedDeviceInfoUpdate(t *testing.T) {
 	}
 
 	topicDescProviderCalls := 0
-	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config) ([]mocks.TopicDesc, error) {
+	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config, repo *devicerepo.DeviceRepo) ([]mocks.TopicDesc, error) {
 		topicDescProviderCalls = topicDescProviderCalls + 1
 		base := []mocks.TopicDesc{
 			{
@@ -505,7 +506,7 @@ func TestTimedDeviceInfoUpdateWithDelete(t *testing.T) {
 	}
 
 	topicDescProviderCalls := 0
-	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config) ([]mocks.TopicDesc, error) {
+	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config, repo *devicerepo.DeviceRepo) ([]mocks.TopicDesc, error) {
 		topicDescProviderCalls = topicDescProviderCalls + 1
 		base := []mocks.TopicDesc{
 			{
@@ -740,7 +741,7 @@ func TestSignaledDeviceInfoUpdate(t *testing.T) {
 	}
 
 	topicDescProviderCalls := 0
-	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config) ([]mocks.TopicDesc, error) {
+	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config, repo *devicerepo.DeviceRepo) ([]mocks.TopicDesc, error) {
 		topicDescProviderCalls = topicDescProviderCalls + 1
 		base := []mocks.TopicDesc{
 			{
@@ -979,7 +980,7 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 	}
 
 	topicDescProviderCalls := 0
-	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config) ([]mocks.TopicDesc, error) {
+	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config, repo *devicerepo.DeviceRepo) ([]mocks.TopicDesc, error) {
 		topicDescProviderCalls = topicDescProviderCalls + 1
 		base := []mocks.TopicDesc{
 			{

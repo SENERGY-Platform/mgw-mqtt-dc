@@ -21,9 +21,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/auth"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationtests/docker"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/generator/iotmodel"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
+	"github.com/SENERGY-Platform/models/go/models"
 	"io"
 	"log"
 	"net/http"
@@ -53,19 +55,35 @@ func TestGetDeviceInfos(t *testing.T) {
 		return
 	}
 
-	auth := NewAuth(Credentials{
+	a := &auth.Auth{Credentials: auth.Credentials{
 		AuthEndpoint:     keycloakUrl,
 		AuthClientId:     "client-connector-lib",
 		AuthClientSecret: "",
 		Username:         "testuser",
 		Password:         "testpw",
-	})
+	}}
 
-	t.Run("create test iot", testGetDeviceInfos_createTestIot(auth, managerUrl, searchUrl))
+	token, err := a.EnsureAccess()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	repo, err := devicerepo.New(devicerepo.RepoConfig{
+		DeviceRepositoryUrl: repoUrl,
+		CacheDuration:       "10s",
+		FallbackFile:        "",
+	}, a)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Run("create test iot", testGetDeviceInfos_createTestIot(a, managerUrl, searchUrl))
 
 	t.Run("check perm-search ready", func(t *testing.T) {
 		temp := []map[string]interface{}{}
-		err, _ = PermissionSearch(auth.Refresh().JwtToken(), searchUrl, QueryMessage{
+		err, _ = PermissionSearch(token, searchUrl, QueryMessage{
 			Resource: "device-types",
 			Find: &QueryFind{
 				QueryListCommons: QueryListCommons{
@@ -85,7 +103,7 @@ func TestGetDeviceInfos(t *testing.T) {
 		}
 	})
 
-	t.Run("call without filter", testGetDeviceInfos_check(auth, searchUrl, repoUrl, "", []string{
+	t.Run("call without filter", testGetDeviceInfos_check(repo, searchUrl, "", []string{
 		"urn:infai:ses:device:found_and_used_with_attr_foo",
 		"urn:infai:ses:device:found_and_used_with_attr_bar",
 		"urn:infai:ses:device:found_and_used_without_attr",
@@ -93,30 +111,30 @@ func TestGetDeviceInfos(t *testing.T) {
 		"urn:infai:ses:device-type:found_and_used",
 	}))
 
-	t.Run("call without filter", testGetDeviceInfos_check(auth, searchUrl, repoUrl, "foo", []string{
+	t.Run("call without filter", testGetDeviceInfos_check(repo, searchUrl, "foo", []string{
 		"urn:infai:ses:device:found_and_used_with_attr_foo",
 	}, []string{
 		"urn:infai:ses:device-type:found_and_used",
 	}))
 
-	t.Run("call without filter", testGetDeviceInfos_check(auth, searchUrl, repoUrl, "bar", []string{
+	t.Run("call without filter", testGetDeviceInfos_check(repo, searchUrl, "bar", []string{
 		"urn:infai:ses:device:found_and_used_with_attr_bar",
 	}, []string{
 		"urn:infai:ses:device-type:found_and_used",
 	}))
 }
 
-func testGetDeviceInfos_check(auth *Auth, searchUrl string, repoUrl string, withAttrFilter string, expectedDeviceIds []string, expectedDeviceTypeIds []string) func(t *testing.T) {
+func testGetDeviceInfos_check(deviceRepo *devicerepo.DeviceRepo, searchUrl string, withAttrFilter string, expectedDeviceIds []string, expectedDeviceTypeIds []string) func(t *testing.T) {
 	return func(t *testing.T) {
-		devices, deviceTypes, err := GetDeviceInfos(auth.Refresh().JwtToken(), searchUrl, repoUrl, withAttrFilter)
+		devices, deviceTypes, err := GetDeviceInfos(deviceRepo, searchUrl, withAttrFilter)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		deviceIds := util.ListMap(devices, func(from iotmodel.Device) string {
+		deviceIds := util.ListMap(devices, func(from models.Device) string {
 			return from.Id
 		})
-		deviceTypesIds := util.ListMap(deviceTypes, func(from iotmodel.DeviceType) string {
+		deviceTypesIds := util.ListMap(deviceTypes, func(from models.DeviceType) string {
 			return from.Id
 		})
 		sort.Strings(expectedDeviceIds)
@@ -143,14 +161,14 @@ func testGetDeviceInfos_check(auth *Auth, searchUrl string, repoUrl string, with
 	}
 }
 
-func testGetDeviceInfos_createTestIot(auth *Auth, managerUrl string, searchUrl string) func(t *testing.T) {
+func testGetDeviceInfos_createTestIot(auth *auth.Auth, managerUrl string, searchUrl string) func(t *testing.T) {
 	return func(t *testing.T) {
 
-		t.Run("create protocol", testGetDeviceInfos_createTestPorotocol(auth, managerUrl, iotmodel.Protocol{
+		t.Run("create protocol", testGetDeviceInfos_createTestPorotocol(auth, managerUrl, models.Protocol{
 			Id:      "urn:infai:ses:protocol:p1",
 			Name:    "p1",
 			Handler: "p1",
-			ProtocolSegments: []iotmodel.ProtocolSegment{
+			ProtocolSegments: []models.ProtocolSegment{
 				{
 					Id:   "urn:infai:ses:protocol-segment:ps1",
 					Name: "ps1",
@@ -160,69 +178,69 @@ func testGetDeviceInfos_createTestIot(auth *Auth, managerUrl string, searchUrl s
 
 		t.Run("wait for protocol cqrs", waitForCqrs(auth, searchUrl, managerUrl, "protocols", "urn:infai:ses:protocol:p1"))
 
-		t.Run("create device-type found_and_used", testGetDeviceInfos_createTestDeviceType(auth, managerUrl, iotmodel.DeviceType{
+		t.Run("create device-type found_and_used", testGetDeviceInfos_createTestDeviceType(auth, managerUrl, models.DeviceType{
 			Id:   "urn:infai:ses:device-type:found_and_used",
 			Name: "found_and_used",
-			Attributes: []iotmodel.Attribute{
+			Attributes: []models.Attribute{
 				{Key: AttributeUsedForGenerator, Value: "true"},
 			},
-			Services: []iotmodel.Service{{
+			Services: []models.Service{{
 				Id:          "urn:infai:ses:s1",
 				LocalId:     "s1",
 				Name:        "s1",
 				Description: "service-desc",
 				ProtocolId:  "urn:infai:ses:protocol:p1",
-				Attributes: []iotmodel.Attribute{
+				Attributes: []models.Attribute{
 					{Key: "test", Value: "42"},
 				},
 			}},
 		}))
 
-		t.Run("create device-type found", testGetDeviceInfos_createTestDeviceType(auth, managerUrl, iotmodel.DeviceType{
+		t.Run("create device-type found", testGetDeviceInfos_createTestDeviceType(auth, managerUrl, models.DeviceType{
 			Id:   "urn:infai:ses:device-type:found",
 			Name: "found",
-			Attributes: []iotmodel.Attribute{
+			Attributes: []models.Attribute{
 				{Key: AttributeUsedForGenerator, Value: "true"},
 			},
-			Services: []iotmodel.Service{{
+			Services: []models.Service{{
 				Id:          "urn:infai:ses:s2",
 				LocalId:     "s2",
 				Name:        "s2",
 				Description: "service-desc",
 				ProtocolId:  "urn:infai:ses:protocol:p1",
-				Attributes: []iotmodel.Attribute{
+				Attributes: []models.Attribute{
 					{Key: "test", Value: "42"},
 				},
 			}},
 		}))
 
-		t.Run("create device-type used", testGetDeviceInfos_createTestDeviceType(auth, managerUrl, iotmodel.DeviceType{
+		t.Run("create device-type used", testGetDeviceInfos_createTestDeviceType(auth, managerUrl, models.DeviceType{
 			Id:         "urn:infai:ses:device-type:used",
 			Name:       "used",
-			Attributes: []iotmodel.Attribute{},
-			Services: []iotmodel.Service{{
+			Attributes: []models.Attribute{},
+			Services: []models.Service{{
 				Id:          "urn:infai:ses:s3",
 				LocalId:     "s3",
 				Name:        "s3",
 				Description: "service-desc",
 				ProtocolId:  "urn:infai:ses:protocol:p1",
-				Attributes: []iotmodel.Attribute{
+				Attributes: []models.Attribute{
 					{Key: "test", Value: "42"},
 				},
 			}},
 		}))
 
-		t.Run("create device-type unused", testGetDeviceInfos_createTestDeviceType(auth, managerUrl, iotmodel.DeviceType{
+		t.Run("create device-type unused", testGetDeviceInfos_createTestDeviceType(auth, managerUrl, models.DeviceType{
 			Id:         "urn:infai:ses:device-type:unused",
 			Name:       "unused",
-			Attributes: []iotmodel.Attribute{},
-			Services: []iotmodel.Service{{
+			Attributes: []models.Attribute{},
+			Services: []models.Service{{
 				Id:          "urn:infai:ses:s4",
 				LocalId:     "s4",
 				Name:        "s4",
 				Description: "service-desc",
 				ProtocolId:  "urn:infai:ses:protocol:p1",
-				Attributes: []iotmodel.Attribute{
+				Attributes: []models.Attribute{
 					{Key: "test", Value: "42"},
 				},
 			}},
@@ -230,54 +248,54 @@ func testGetDeviceInfos_createTestIot(auth *Auth, managerUrl string, searchUrl s
 
 		t.Run("wait for device-type cqrs", waitForCqrs(auth, searchUrl, managerUrl, "device-types", "urn:infai:ses:device-type:unused"))
 
-		t.Run("create device found_and_used_with_attr_foo", testGetDeviceInfos_createTestDevice(auth, managerUrl, iotmodel.Device{
+		t.Run("create device found_and_used_with_attr_foo", testGetDeviceInfos_createTestDevice(auth, managerUrl, models.Device{
 			Id:           "urn:infai:ses:device:found_and_used_with_attr_foo",
 			Name:         "found_and_used_with_attr_foo",
 			LocalId:      "found_and_used_with_attr_foo",
 			DeviceTypeId: "urn:infai:ses:device-type:found_and_used",
-			Attributes: []iotmodel.Attribute{
+			Attributes: []models.Attribute{
 				{Key: AttributeUsedForGenerator, Value: "foo"},
 			},
 		}))
 
-		t.Run("create device found_and_used_with_attr_bar", testGetDeviceInfos_createTestDevice(auth, managerUrl, iotmodel.Device{
+		t.Run("create device found_and_used_with_attr_bar", testGetDeviceInfos_createTestDevice(auth, managerUrl, models.Device{
 			Id:           "urn:infai:ses:device:found_and_used_with_attr_bar",
 			Name:         "found_and_used_with_attr_bar",
 			LocalId:      "found_and_used_with_attr_bar",
 			DeviceTypeId: "urn:infai:ses:device-type:found_and_used",
-			Attributes: []iotmodel.Attribute{
+			Attributes: []models.Attribute{
 				{Key: AttributeUsedForGenerator, Value: "bar"},
 			},
 		}))
 
-		t.Run("create device found_and_used_without_attr", testGetDeviceInfos_createTestDevice(auth, managerUrl, iotmodel.Device{
+		t.Run("create device found_and_used_without_attr", testGetDeviceInfos_createTestDevice(auth, managerUrl, models.Device{
 			Id:           "urn:infai:ses:device:found_and_used_without_attr",
 			Name:         "found_and_used_without_attr",
 			LocalId:      "found_and_used_without_attr",
 			DeviceTypeId: "urn:infai:ses:device-type:found_and_used",
 		}))
 
-		t.Run("create device used_with_attr_foo", testGetDeviceInfos_createTestDevice(auth, managerUrl, iotmodel.Device{
+		t.Run("create device used_with_attr_foo", testGetDeviceInfos_createTestDevice(auth, managerUrl, models.Device{
 			Id:           "urn:infai:ses:device:used_with_attr_foo",
 			Name:         "used_with_attr_foo",
 			LocalId:      "used_with_attr_foo",
 			DeviceTypeId: "urn:infai:ses:device-type:used",
-			Attributes: []iotmodel.Attribute{
+			Attributes: []models.Attribute{
 				{Key: AttributeUsedForGenerator, Value: "foo"},
 			},
 		}))
 
-		t.Run("create device used_with_attr_bar", testGetDeviceInfos_createTestDevice(auth, managerUrl, iotmodel.Device{
+		t.Run("create device used_with_attr_bar", testGetDeviceInfos_createTestDevice(auth, managerUrl, models.Device{
 			Id:           "urn:infai:ses:device:used_with_attr_bar",
 			Name:         "used_with_attr_bar",
 			LocalId:      "used_with_attr_bar",
 			DeviceTypeId: "urn:infai:ses:device-type:used",
-			Attributes: []iotmodel.Attribute{
+			Attributes: []models.Attribute{
 				{Key: AttributeUsedForGenerator, Value: "bar"},
 			},
 		}))
 
-		t.Run("create device used_without_attr", testGetDeviceInfos_createTestDevice(auth, managerUrl, iotmodel.Device{
+		t.Run("create device used_without_attr", testGetDeviceInfos_createTestDevice(auth, managerUrl, models.Device{
 			Id:           "urn:infai:ses:device:used_without_attr",
 			Name:         "used_without_attr",
 			LocalId:      "used_without_attr",
@@ -288,11 +306,15 @@ func testGetDeviceInfos_createTestIot(auth *Auth, managerUrl string, searchUrl s
 	}
 }
 
-func testGetDeviceInfos_createTestPorotocol(auth *Auth, managerUrl string, protocol iotmodel.Protocol) func(t *testing.T) {
+func testGetDeviceInfos_createTestPorotocol(auth *auth.Auth, managerUrl string, protocol models.Protocol) func(t *testing.T) {
 	return func(t *testing.T) {
-		token := auth.Refresh().JwtToken()
+		token, err := auth.EnsureAccess()
+		if err != nil {
+			t.Error(err)
+			return
+		}
 		requestBody := new(bytes.Buffer)
-		err := json.NewEncoder(requestBody).Encode(protocol)
+		err = json.NewEncoder(requestBody).Encode(protocol)
 		if err != nil {
 			t.Error(err)
 			return
@@ -317,11 +339,15 @@ func testGetDeviceInfos_createTestPorotocol(auth *Auth, managerUrl string, proto
 	}
 }
 
-func testGetDeviceInfos_createTestDeviceType(auth *Auth, managerUrl string, dt iotmodel.DeviceType) func(t *testing.T) {
+func testGetDeviceInfos_createTestDeviceType(auth *auth.Auth, managerUrl string, dt models.DeviceType) func(t *testing.T) {
 	return func(t *testing.T) {
-		token := auth.Refresh().JwtToken()
+		token, err := auth.EnsureAccess()
+		if err != nil {
+			t.Error(err)
+			return
+		}
 		requestBody := new(bytes.Buffer)
-		err := json.NewEncoder(requestBody).Encode(dt)
+		err = json.NewEncoder(requestBody).Encode(dt)
 		if err != nil {
 			t.Error(err)
 			return
@@ -346,11 +372,15 @@ func testGetDeviceInfos_createTestDeviceType(auth *Auth, managerUrl string, dt i
 	}
 }
 
-func testGetDeviceInfos_createTestDevice(auth *Auth, managerUrl string, device iotmodel.Device) func(t *testing.T) {
+func testGetDeviceInfos_createTestDevice(auth *auth.Auth, managerUrl string, device models.Device) func(t *testing.T) {
 	return func(t *testing.T) {
-		token := auth.Refresh().JwtToken()
+		token, err := auth.EnsureAccess()
+		if err != nil {
+			t.Error(err)
+			return
+		}
 		requestBody := new(bytes.Buffer)
-		err := json.NewEncoder(requestBody).Encode(device)
+		err = json.NewEncoder(requestBody).Encode(device)
 		if err != nil {
 			t.Error(err)
 			return
@@ -375,7 +405,7 @@ func testGetDeviceInfos_createTestDevice(auth *Auth, managerUrl string, device i
 	}
 }
 
-func waitForCqrs(auth *Auth, searchUrl string, managerUrl string, resource string, id string) func(t *testing.T) {
+func waitForCqrs(auth *auth.Auth, searchUrl string, managerUrl string, resource string, id string) func(t *testing.T) {
 	return func(t *testing.T) {
 		var err error
 		for i := 0; i < 10; i++ {
@@ -405,10 +435,13 @@ func waitForCqrs(auth *Auth, searchUrl string, managerUrl string, resource strin
 	}
 }
 
-func headPermissionSearch(auth *Auth, searchUrl string, resource string, id string) error {
+func headPermissionSearch(auth *auth.Auth, searchUrl string, resource string, id string) error {
 	endpoint := searchUrl + "/v3/resources/" + resource + "/" + url.PathEscape(id)
 	log.Println("HEAD", endpoint)
-	token := auth.Refresh().JwtToken()
+	token, err := auth.EnsureAccess()
+	if err != nil {
+		return err
+	}
 	req, err := http.NewRequest("HEAD", endpoint, nil)
 	if err != nil {
 		return err
@@ -425,10 +458,13 @@ func headPermissionSearch(auth *Auth, searchUrl string, resource string, id stri
 	return nil
 }
 
-func headDeviceManager(auth *Auth, managerUrl string, resource string, id string) error {
+func headDeviceManager(auth *auth.Auth, managerUrl string, resource string, id string) error {
 	endpoint := managerUrl + "/" + resource + "/" + url.PathEscape(id)
 	log.Println("GET", endpoint)
-	token := auth.Refresh().JwtToken()
+	token, err := auth.EnsureAccess()
+	if err != nil {
+		return err
+	}
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		return err

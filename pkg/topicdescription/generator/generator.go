@@ -18,9 +18,9 @@ package generator
 
 import (
 	"bytes"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/generator/iotmodel"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
+	"github.com/SENERGY-Platform/models/go/models"
 	"log"
 	"strings"
 	"text/template"
@@ -33,8 +33,8 @@ const EventAttribute = "senergy/local-mqtt/event-topic-tmpl"
 var TemplateLocalDeviceIdPlaceholders = []string{"Device", "LocalDeviceId"}
 var TemplateLocalServiceIdPlaceholders = []string{"Service", "LocalServiceId"}
 
-func GenerateTopicDescriptions(devices []iotmodel.Device, deviceTypes []iotmodel.DeviceType, truncateDevicePrefix string) (result []model.TopicDescription) {
-	dtIndex := map[string]iotmodel.DeviceType{}
+func GenerateTopicDescriptions(devices []models.Device, deviceTypes []models.DeviceType, truncateDevicePrefix string) (result []model.TopicDescription) {
+	dtIndex := map[string]models.DeviceType{}
 	for _, dt := range deviceTypes {
 		dtIndex[dt.Id] = dt
 	}
@@ -50,20 +50,20 @@ func GenerateTopicDescriptions(devices []iotmodel.Device, deviceTypes []iotmodel
 	return FilterDuplicates(result)
 }
 
-func GenerateDeviceTopicDescriptions(device iotmodel.Device, deviceType iotmodel.DeviceType, truncateDevicePrefix string) (result []model.TopicDescription) {
+func GenerateDeviceTopicDescriptions(device models.Device, deviceType models.DeviceType, truncateDevicePrefix string) (result []model.TopicDescription) {
 	for _, service := range deviceType.Services {
 		result = append(result, GenerateServiceTopicDescriptions(device, service, truncateDevicePrefix)...)
 	}
 	return result
 }
 
-func GenerateServiceTopicDescriptions(device iotmodel.Device, service iotmodel.Service, truncateDevicePrefix string) (result []model.TopicDescription) {
+func GenerateServiceTopicDescriptions(device models.Device, service models.Service, truncateDevicePrefix string) (result []model.TopicDescription) {
 	result = append(result, GenerateEventServiceTopicDescriptions(device, service, truncateDevicePrefix)...)
 	result = append(result, GenerateCommandServiceTopicDescriptions(device, service, truncateDevicePrefix)...)
 	return result
 }
 
-func GenerateCommandServiceTopicDescriptions(device iotmodel.Device, service iotmodel.Service, truncateDevicePrefix string) (result []model.TopicDescription) {
+func GenerateCommandServiceTopicDescriptions(device models.Device, service models.Service, truncateDevicePrefix string) (result []model.TopicDescription) {
 	cmdTopicTempl, found := GetAttributeValue(service.Attributes, CommandAttribute)
 	if !found {
 		return result
@@ -92,7 +92,7 @@ func GenerateCommandServiceTopicDescriptions(device iotmodel.Device, service iot
 	return []model.TopicDescription{temp}
 }
 
-func GenerateEventServiceTopicDescriptions(device iotmodel.Device, service iotmodel.Service, truncateDevicePrefix string) (result []model.TopicDescription) {
+func GenerateEventServiceTopicDescriptions(device models.Device, service models.Service, truncateDevicePrefix string) (result []model.TopicDescription) {
 	eventTopicTempl, found := GetAttributeValue(service.Attributes, EventAttribute)
 	if !found {
 		return result
@@ -111,7 +111,7 @@ func GenerateEventServiceTopicDescriptions(device iotmodel.Device, service iotmo
 	}}
 }
 
-func GetAttributeValue(attributes []iotmodel.Attribute, key string) (result string, found bool) {
+func GetAttributeValue(attributes []models.Attribute, key string) (result string, found bool) {
 	for _, attr := range attributes {
 		if attr.Key == key {
 			return attr.Value, true
@@ -120,7 +120,7 @@ func GetAttributeValue(attributes []iotmodel.Attribute, key string) (result stri
 	return result, false
 }
 
-func GenerateTopic(topicTemplate string, deviceId string, serviceId string, truncateDevicePrefix string, attributes []iotmodel.Attribute) (result string, err error) {
+func GenerateTopic(topicTemplate string, deviceId string, serviceId string, truncateDevicePrefix string, attributes []models.Attribute) (result string, err error) {
 	values := map[string]string{}
 	for _, placeholder := range TemplateLocalDeviceIdPlaceholders {
 		temp := deviceId

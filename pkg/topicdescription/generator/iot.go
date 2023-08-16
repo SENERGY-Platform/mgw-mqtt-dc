@@ -17,15 +17,9 @@
 package generator
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/generator/iotmodel"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
-	"log"
-	"net/http"
-	"net/url"
-	"runtime/debug"
+	"github.com/SENERGY-Platform/models/go/models"
 )
 
 const AttributeUsedForGenerator = "senergy/local-mqtt"
@@ -33,7 +27,11 @@ const AttributeUsedForGenerator = "senergy/local-mqtt"
 // GetDeviceInfos returns all device-types with attribute AttributeUsedForGenerator
 // and devices matching a device-type
 // if filterDevicesByAttribute != "" the devices will be filtered by AttributeUsedForGenerator == filterDevicesByAttribute
-func GetDeviceInfos(token string, searchUrl string, repoUrl string, filterDevicesByAttribute string) (devices []iotmodel.Device, deviceTypes []iotmodel.DeviceType, err error) {
+func GetDeviceInfos(repo *devicerepo.DeviceRepo, searchUrl string, filterDevicesByAttribute string) (devices []models.Device, deviceTypes []models.DeviceType, err error) {
+	token, err := repo.GetToken()
+	if err != nil {
+		return devices, deviceTypes, err
+	}
 	type IdWrapper struct {
 		Id string `json:"id"`
 	}
@@ -68,7 +66,7 @@ func GetDeviceInfos(token string, searchUrl string, repoUrl string, filterDevice
 		dtIds = []string{}
 	}
 
-	permsearchDevices := []iotmodel.Device{}
+	permsearchDevices := []models.Device{}
 	deviceFilter := Selection{
 		Condition: &ConditionConfig{
 			Feature:   "features.device_type_id",
@@ -115,8 +113,8 @@ func GetDeviceInfos(token string, searchUrl string, repoUrl string, filterDevice
 	}
 
 	//local filter because filtering in permission-search may not be complete if device attributes contain Attributes{{Key:"foo", Value: filterDevicesByAttribute}, {Key:AttributeUsedForGenerator, Value: "bar"}}
-	devices = util.ListFilter(permsearchDevices, func(d iotmodel.Device) bool {
-		return filterDevicesByAttribute == "" || util.ListContains(d.Attributes, func(a iotmodel.Attribute) bool {
+	devices = util.ListFilter(permsearchDevices, func(d models.Device) bool {
+		return filterDevicesByAttribute == "" || util.ListContains(d.Attributes, func(a models.Attribute) bool {
 			return a.Key == AttributeUsedForGenerator && a.Value == filterDevicesByAttribute
 		})
 	})
@@ -127,41 +125,11 @@ func GetDeviceInfos(token string, searchUrl string, repoUrl string, filterDevice
 	}
 
 	for dtId, _ := range usedDeviceTypeIds {
-		dt, err, _ := GetDeviceType(token, repoUrl, dtId)
+		dt, err := repo.GetDeviceType(dtId)
 		if err != nil {
 			return devices, deviceTypes, err
 		}
 		deviceTypes = append(deviceTypes, dt)
 	}
 	return devices, deviceTypes, nil
-}
-
-func GetDeviceType(token string, repoUrl string, id string) (result iotmodel.DeviceType, err error, code int) {
-	req, err := http.NewRequest("GET", repoUrl+"/device-types/"+url.PathEscape(id), nil)
-	if err != nil {
-		debug.PrintStack()
-		return result, err, http.StatusInternalServerError
-	}
-	req.Header.Set("Authorization", token)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		debug.PrintStack()
-		return result, err, http.StatusInternalServerError
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(resp.Body)
-		err = errors.New(buf.String())
-		log.Println("ERROR: ", resp.StatusCode, err)
-		debug.PrintStack()
-		return result, err, resp.StatusCode
-	}
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		debug.PrintStack()
-		return result, err, http.StatusInternalServerError
-	}
-
-	return result, nil, http.StatusOK
 }

@@ -19,6 +19,7 @@ package connector
 import (
 	"context"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 )
@@ -26,7 +27,7 @@ import (
 type GenericMgwFactory[T MgwClient] func(ctx context.Context, config configuration.Config, refreshNotifier func()) (T, error)
 type MgwFactory = GenericMgwFactory[MgwClient]
 
-type GenericTopicDescriptionProvider[T TopicDescription] func(config configuration.Config) ([]T, error)
+type GenericTopicDescriptionProvider[T TopicDescription] func(config configuration.Config, deviceRepo *devicerepo.DeviceRepo) ([]T, error)
 type TopicDescriptionProvider = GenericTopicDescriptionProvider[TopicDescription]
 
 type GenericMqttFactory[T MqttClient] func(ctx context.Context, brokerUrl string, clientId string, username string, password string) (T, error)
@@ -90,7 +91,7 @@ func TopicDescriptionsConverter[T TopicDescription](from []T) []TopicDescription
 }
 
 func NewTopicDescriptionProvider[T TopicDescription](f GenericTopicDescriptionProvider[T]) (result TopicDescriptionProvider) {
-	return util.FMap1(f, TopicDescriptionsConverter[T])
+	return util.FMap2(f, TopicDescriptionsConverter[T])
 }
 
 func NewMgwFactory[MgwClientType MgwClient](f GenericMgwFactory[MgwClientType]) (result MgwFactory) {

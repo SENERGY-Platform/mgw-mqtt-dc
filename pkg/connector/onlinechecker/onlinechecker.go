@@ -19,7 +19,6 @@ package onlinechecker
 import (
 	"errors"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/connector/onlinechecker/marshaller"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/models/go/models"
 	"log"
@@ -28,7 +27,7 @@ import (
 )
 
 func New[T TopicDesc](config configuration.Config, devicerepo DeviceRepo) (result *Checker[T], err error) {
-	m, err := marshaller.New(devicerepo)
+	m, err := NewMarshaller(devicerepo)
 	if err != nil {
 		return result, err
 	}
@@ -45,12 +44,8 @@ func New[T TopicDesc](config configuration.Config, devicerepo DeviceRepo) (resul
 }
 
 type DeviceRepo interface {
-	marshaller.DeviceRepo
+	DeviceRepoForMarshaller
 	GetService(deviceTypeId string, localServiceId string) (models.Service, error)
-}
-
-type Marshaller interface {
-	Unmarshal(service models.Service, functionId string, targetCharacteristic string, message map[string]interface{}) (value interface{}, err error)
 }
 
 type TopicDesc interface {
@@ -60,7 +55,7 @@ type TopicDesc interface {
 }
 
 type Checker[T TopicDesc] struct {
-	marshaller                           Marshaller
+	marshaller                           *Marshaller
 	config                               configuration.Config
 	mux                                  sync.Mutex
 	knownStates                          map[string]mgw.State

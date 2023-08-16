@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/connector"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationtests/docker"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationtests/mocks"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
@@ -124,7 +125,7 @@ func TestCorrelationIdMatching(t *testing.T) {
 		},
 	}
 
-	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config) ([]mocks.TopicDesc, error) {
+	_, err = connector.NewWithFactories(ctx, conf, connector.NewTopicDescriptionProvider(func(config configuration.Config, repo *devicerepo.DeviceRepo) ([]mocks.TopicDesc, error) {
 		return topicDescriptions, nil
 	}), connector.NewMgwFactory(mgw.New), connector.NewMqttFactory(mqtt.New))
 	if err != nil {

@@ -18,22 +18,17 @@ package topicdescription
 
 import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/generator"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"log"
 )
 
-func LoadWithGenerator(config configuration.Config) (topicDescriptions []model.TopicDescription, err error) {
+func LoadWithGenerator(config configuration.Config, repo *devicerepo.DeviceRepo) (topicDescriptions []model.TopicDescription, err error) {
 	defer func() {
 		topicDescriptions, err = LoadDir(config.DeviceDescriptionsDir)
 	}()
-	devices, deviceTypes, err := generator.GetDeviceInfos(generator.NewAuth(generator.Credentials{
-		AuthEndpoint:     config.GeneratorAuthEndpoint,
-		AuthClientId:     config.GeneratorAuthClientId,
-		AuthClientSecret: config.GeneratorAuthClientSecret,
-		Username:         config.GeneratorAuthUsername,
-		Password:         config.GeneratorAuthPassword,
-	}).Refresh().JwtToken(), config.GeneratorPermissionSearchUrl, config.GeneratorDeviceRepositoryUrl, config.GeneratorFilterDevicesByAttribute)
+	devices, deviceTypes, err := generator.GetDeviceInfos(repo, config.GeneratorPermissionSearchUrl, config.GeneratorFilterDevicesByAttribute)
 	if err != nil {
 		log.Println("WARNING: unable to generate topic descriptions:", err)
 		return nil, err

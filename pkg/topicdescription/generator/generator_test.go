@@ -18,16 +18,16 @@ package generator
 
 import (
 	"encoding/json"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/generator/iotmodel"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
+	"github.com/SENERGY-Platform/models/go/models"
 	"reflect"
 	"testing"
 )
 
 func TestGenerateTopicDescriptionsWithTruncate(t *testing.T) {
 	prefix := "foobarbatz:"
-	devices := []iotmodel.Device{
+	devices := []models.Device{
 		{
 			LocalId:      prefix + "d1",
 			Name:         "device 1",
@@ -57,32 +57,32 @@ func TestGenerateTopicDescriptionsWithTruncate(t *testing.T) {
 		},
 	}
 
-	deviceTypes := []iotmodel.DeviceType{
+	deviceTypes := []models.DeviceType{
 		{
 			Id: "dt1",
-			Services: []iotmodel.Service{
+			Services: []models.Service{
 				{
 					LocalId: "s1",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: EventAttribute, Value: "{{.Device}}/e1"},
 					},
 				},
 				{
 					LocalId: "s2",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: CommandAttribute, Value: "{{.Device}}/c1"},
 					},
 				},
 				{
 					LocalId: "s3",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: CommandAttribute, Value: "{{.Device}}/c2"},
 						{Key: ResponseAttribute, Value: "{{.Device}}/r2"},
 					},
 				},
 				{
 					LocalId: "s4",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: EventAttribute, Value: "{{.Device}}/e3"},
 						{Key: CommandAttribute, Value: "{{.Device}}/c3"},
 						{Key: ResponseAttribute, Value: "{{.Device}}/r3"},
@@ -92,10 +92,10 @@ func TestGenerateTopicDescriptionsWithTruncate(t *testing.T) {
 		},
 		{
 			Id: "dt2",
-			Services: []iotmodel.Service{
+			Services: []models.Service{
 				{
 					LocalId: "s1",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: EventAttribute, Value: "{{.LocalDeviceId}}/{{.LocalServiceId}}"},
 					},
 				},
@@ -103,7 +103,7 @@ func TestGenerateTopicDescriptionsWithTruncate(t *testing.T) {
 		},
 		{
 			Id: "dt3",
-			Services: []iotmodel.Service{
+			Services: []models.Service{
 				{
 					LocalId: "s1",
 				},
@@ -211,7 +211,7 @@ func TestGenerateTopicDescriptionsWithTruncate(t *testing.T) {
 }
 
 func TestGenerateTopicDescriptions(t *testing.T) {
-	devices := []iotmodel.Device{
+	devices := []models.Device{
 		{
 			LocalId:      "d1",
 			Name:         "device 1",
@@ -241,32 +241,32 @@ func TestGenerateTopicDescriptions(t *testing.T) {
 		},
 	}
 
-	deviceTypes := []iotmodel.DeviceType{
+	deviceTypes := []models.DeviceType{
 		{
 			Id: "dt1",
-			Services: []iotmodel.Service{
+			Services: []models.Service{
 				{
 					LocalId: "s1",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: EventAttribute, Value: "{{.Device}}/e1"},
 					},
 				},
 				{
 					LocalId: "s2",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: CommandAttribute, Value: "{{.Device}}/c1"},
 					},
 				},
 				{
 					LocalId: "s3",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: CommandAttribute, Value: "{{.Device}}/c2"},
 						{Key: ResponseAttribute, Value: "{{.Device}}/r2"},
 					},
 				},
 				{
 					LocalId: "s4",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: EventAttribute, Value: "{{.Device}}/e3"},
 						{Key: CommandAttribute, Value: "{{.Device}}/c3"},
 						{Key: ResponseAttribute, Value: "{{.Device}}/r3"},
@@ -276,10 +276,10 @@ func TestGenerateTopicDescriptions(t *testing.T) {
 		},
 		{
 			Id: "dt2",
-			Services: []iotmodel.Service{
+			Services: []models.Service{
 				{
 					LocalId: "s1",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: EventAttribute, Value: "{{.LocalDeviceId}}/{{.LocalServiceId}}"},
 					},
 				},
@@ -287,7 +287,7 @@ func TestGenerateTopicDescriptions(t *testing.T) {
 		},
 		{
 			Id: "dt3",
-			Services: []iotmodel.Service{
+			Services: []models.Service{
 				{
 					LocalId: "s1",
 				},
@@ -395,12 +395,12 @@ func TestGenerateTopicDescriptions(t *testing.T) {
 }
 
 func TestGenerateTopicDescriptionsWithAttr(t *testing.T) {
-	devices := []iotmodel.Device{
+	devices := []models.Device{
 		{
 			LocalId:      "d1",
 			Name:         "device 1",
 			DeviceTypeId: "dt1",
-			Attributes: []iotmodel.Attribute{
+			Attributes: []models.Attribute{
 				{Key: "foo", Value: "bar"},
 				{Key: "something", Value: "else"},
 				{Key: "sepl/batz", Value: "ignore"},
@@ -430,32 +430,32 @@ func TestGenerateTopicDescriptionsWithAttr(t *testing.T) {
 		},
 	}
 
-	deviceTypes := []iotmodel.DeviceType{
+	deviceTypes := []models.DeviceType{
 		{
 			Id: "dt1",
-			Services: []iotmodel.Service{
+			Services: []models.Service{
 				{
 					LocalId: "s1",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: EventAttribute, Value: "{{.foo}}{{.Device}}/e1"},
 					},
 				},
 				{
 					LocalId: "s2",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: CommandAttribute, Value: "{{.foo}}{{.Device}}/c1"},
 					},
 				},
 				{
 					LocalId: "s3",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: CommandAttribute, Value: "{{.foo}}{{.Device}}/c2"},
 						{Key: ResponseAttribute, Value: "{{.foo}}{{.Device}}/r2"},
 					},
 				},
 				{
 					LocalId: "s4",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: EventAttribute, Value: "{{.foo}}{{.Device}}/e3"},
 						{Key: CommandAttribute, Value: "{{.foo}}{{.Device}}/c3"},
 						{Key: ResponseAttribute, Value: "{{.foo}}{{.Device}}/r3"},
@@ -465,10 +465,10 @@ func TestGenerateTopicDescriptionsWithAttr(t *testing.T) {
 		},
 		{
 			Id: "dt2",
-			Services: []iotmodel.Service{
+			Services: []models.Service{
 				{
 					LocalId: "s1",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: EventAttribute, Value: "{{.LocalDeviceId}}/{{.LocalServiceId}}"},
 					},
 				},
@@ -476,7 +476,7 @@ func TestGenerateTopicDescriptionsWithAttr(t *testing.T) {
 		},
 		{
 			Id: "dt3",
-			Services: []iotmodel.Service{
+			Services: []models.Service{
 				{
 					LocalId: "s1",
 				},
@@ -584,7 +584,7 @@ func TestGenerateTopicDescriptionsWithAttr(t *testing.T) {
 }
 
 func TestGeneratorDuplicate(t *testing.T) {
-	devices := []iotmodel.Device{
+	devices := []models.Device{
 		{
 			LocalId:      "d1",
 			Name:         "device 1",
@@ -592,14 +592,14 @@ func TestGeneratorDuplicate(t *testing.T) {
 		},
 	}
 
-	deviceTypes := []iotmodel.DeviceType{
+	deviceTypes := []models.DeviceType{
 		{
 			Id: "dt1",
-			Services: []iotmodel.Service{
+			Services: []models.Service{
 				{
 					Name:    "setOn",
 					LocalId: "power",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: CommandAttribute, Value: "{{.Device}}/c2"},
 						{Key: ResponseAttribute, Value: "{{.Device}}/r2"},
 					},
@@ -607,7 +607,7 @@ func TestGeneratorDuplicate(t *testing.T) {
 				{
 					Name:    "setOff",
 					LocalId: "power",
-					Attributes: []iotmodel.Attribute{
+					Attributes: []models.Attribute{
 						{Key: CommandAttribute, Value: "{{.Device}}/c2"},
 						{Key: ResponseAttribute, Value: "{{.Device}}/r2"},
 					},

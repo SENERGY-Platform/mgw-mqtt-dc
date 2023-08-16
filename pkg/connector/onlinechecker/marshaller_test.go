@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 InfAI (CC SES)
+ * Copyright 2023 InfAI (CC SES)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package marshaller
+package onlinechecker
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ import (
 )
 
 func TestMarshaller(t *testing.T) {
-	m, err := New(DeviceRepoMock{
+	m, err := NewMarshaller(DeviceRepoMock{
 		GetCharacteristicF: func(id string) (characteristic models.Characteristic, err error) {
 			characteristic, ok := map[string]models.Characteristic{
 				"devicevalue": {

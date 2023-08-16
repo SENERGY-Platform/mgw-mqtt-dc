@@ -19,7 +19,6 @@ package devicerepo
 import (
 	"encoding/json"
 	"errors"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/auth"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/cache"
 	"github.com/SENERGY-Platform/models/go/models"
@@ -32,12 +31,12 @@ import (
 	"time"
 )
 
-func New(config configuration.Config, auth *auth.Auth) (result *DeviceRepo, err error) {
+func New(config RepoConfig, auth *auth.Auth) (result *DeviceRepo, err error) {
 	result = &DeviceRepo{
 		auth:   auth,
 		config: config,
 	}
-	cacheDuration, err := time.ParseDuration(config.DeviceRepoCacheDuration)
+	cacheDuration, err := time.ParseDuration(config.CacheDuration)
 	if err != nil {
 		return result, err
 	}
@@ -53,10 +52,16 @@ func New(config configuration.Config, auth *auth.Auth) (result *DeviceRepo, err 
 	return result, nil
 }
 
+type RepoConfig struct {
+	DeviceRepositoryUrl string
+	CacheDuration       string
+	FallbackFile        string
+}
+
 type DeviceRepo struct {
 	auth   *auth.Auth
 	cache  *cache.Cache
-	config configuration.Config
+	config RepoConfig
 }
 
 func (this *DeviceRepo) GetJson(token string, endpoint string, result interface{}) (err error) {
@@ -91,11 +96,11 @@ func (this *DeviceRepo) GetJson(token string, endpoint string, result interface{
 	return nil
 }
 
-func (this *DeviceRepo) getToken() (string, error) {
+func (this *DeviceRepo) GetToken() (string, error) {
 	if this.auth == nil {
 		this.auth = &auth.Auth{}
 	}
-	return this.auth.EnsureAccess(this.config)
+	return this.auth.EnsureAccess()
 }
 
 func (this *DeviceRepo) GetCharacteristic(id string) (result models.Characteristic, err error) {
@@ -106,12 +111,12 @@ func (this *DeviceRepo) GetCharacteristic(id string) (result models.Characterist
 }
 
 func (this *DeviceRepo) getCharacteristic(id string) (result models.Characteristic, err error) {
-	token, err := this.getToken()
+	token, err := this.GetToken()
 	if err != nil {
 		return result, err
 	}
 
-	err = this.GetJson(token, this.config.GeneratorDeviceRepositoryUrl+"/characteristics/"+url.PathEscape(id), &result)
+	err = this.GetJson(token, this.config.DeviceRepositoryUrl+"/characteristics/"+url.PathEscape(id), &result)
 	return
 }
 
@@ -123,11 +128,11 @@ func (this *DeviceRepo) GetConcept(id string) (result models.Concept, err error)
 }
 
 func (this *DeviceRepo) getConcept(id string) (result models.Concept, err error) {
-	token, err := this.getToken()
+	token, err := this.GetToken()
 	if err != nil {
 		return result, err
 	}
-	err = this.GetJson(token, this.config.GeneratorDeviceRepositoryUrl+"/concepts/"+url.PathEscape(id), &result)
+	err = this.GetJson(token, this.config.DeviceRepositoryUrl+"/concepts/"+url.PathEscape(id), &result)
 	return
 }
 
@@ -149,11 +154,11 @@ func (this *DeviceRepo) GetFunction(id string) (result models.Function, err erro
 }
 
 func (this *DeviceRepo) getFunction(id string) (result models.Function, err error) {
-	token, err := this.getToken()
+	token, err := this.GetToken()
 	if err != nil {
 		return result, err
 	}
-	err = this.GetJson(token, this.config.GeneratorDeviceRepositoryUrl+"/functions/"+url.PathEscape(id), &result)
+	err = this.GetJson(token, this.config.DeviceRepositoryUrl+"/functions/"+url.PathEscape(id), &result)
 	return
 }
 
@@ -165,11 +170,11 @@ func (this *DeviceRepo) GetAspectNode(id string) (result models.AspectNode, err 
 }
 
 func (this *DeviceRepo) getAspectNode(id string) (result models.AspectNode, err error) {
-	token, err := this.getToken()
+	token, err := this.GetToken()
 	if err != nil {
 		return result, err
 	}
-	err = this.GetJson(token, this.config.GeneratorDeviceRepositoryUrl+"/aspect-nodes/"+url.QueryEscape(id), &result)
+	err = this.GetJson(token, this.config.DeviceRepositoryUrl+"/aspect-nodes/"+url.QueryEscape(id), &result)
 	return
 }
 
@@ -181,11 +186,11 @@ func (this *DeviceRepo) GetDeviceType(id string) (result models.DeviceType, err 
 }
 
 func (this *DeviceRepo) getDeviceType(id string) (result models.DeviceType, err error) {
-	token, err := this.getToken()
+	token, err := this.GetToken()
 	if err != nil {
 		return result, err
 	}
-	err = this.GetJson(token, this.config.GeneratorDeviceRepositoryUrl+"/device-types/"+url.QueryEscape(id), &result)
+	err = this.GetJson(token, this.config.DeviceRepositoryUrl+"/device-types/"+url.QueryEscape(id), &result)
 	return
 }
 

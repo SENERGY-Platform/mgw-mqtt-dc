@@ -68,8 +68,18 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 		config.DeviceRepoCacheDuration = "10m"
 	}
 
-	a := &auth.Auth{}
-	repo, err := devicerepo.New(config, a)
+	a := &auth.Auth{Credentials: auth.Credentials{
+		AuthEndpoint:     config.GeneratorAuthEndpoint,
+		AuthClientId:     config.GeneratorAuthClientId,
+		AuthClientSecret: config.GeneratorAuthClientSecret,
+		Username:         config.GeneratorAuthUsername,
+		Password:         config.GeneratorAuthPassword,
+	}}
+	repo, err := devicerepo.New(devicerepo.RepoConfig{
+		DeviceRepositoryUrl: config.GeneratorDeviceRepositoryUrl,
+		CacheDuration:       config.DeviceRepoCacheDuration,
+		FallbackFile:        config.FallbackFile,
+	}, a)
 	if err != nil {
 		return result, err
 	}
