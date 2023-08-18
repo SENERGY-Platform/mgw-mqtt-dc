@@ -357,6 +357,332 @@ func TestLwt(t *testing.T) {
 	})
 }
 
+func TestLwt2(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	keycloakUrl, err := docker.Keycloak(ctx, wg)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	managerUrl, repoUrl, searchUrl, err := docker.DeviceManagerWithDependencies(ctx, wg)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	mqttPort, _, err := docker.Mqtt(ctx, wg)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	mgwPort, _, err := docker.Mqtt(ctx, wg)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	config, err := configuration.Load("../../config.json")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	config.MqttBroker = "tcp://localhost:" + mqttPort
+	config.MgwMqttBroker = "tcp://localhost:" + mgwPort
+	config.GeneratorDeviceRepositoryUrl = repoUrl
+	config.GeneratorPermissionSearchUrl = searchUrl
+	config.ConnectorId = "test"
+	config.MgwMqttClientId = "mgwclientid"
+	config.MqttCmdClientId = "mqttcmdclientid"
+	config.MqttEventClientId = "mqtteventclientid"
+	config.GeneratorAuthUsername = "testuser"
+	config.GeneratorAuthPassword = "testpw"
+	config.GeneratorAuthEndpoint = keycloakUrl
+	config.GeneratorUse = true
+
+	tempDir := t.TempDir()
+
+	config.FallbackFile = path.Join(tempDir, "fallback.json")
+	config.GeneratorDeviceDescriptionsDir = tempDir
+	config.DeviceDescriptionsDir = tempDir
+
+	t.Logf("%#v", config)
+
+	protocols := []models.Protocol{
+		{
+			Id:      "urn:infai:ses:protocol:f3a63aeb-187e-4dd9-9ef5-d97a6eb6292b",
+			Name:    "standard-connector",
+			Handler: "connector",
+			ProtocolSegments: []models.ProtocolSegment{
+				{
+					Id:   "urn:infai:ses:protocol-segment:9956d8b5-46fa-4381-a227-c1df69808997",
+					Name: "metadata",
+				},
+				{
+					Id:   "urn:infai:ses:protocol-segment:0d211842-cef8-41ec-ab6b-9dbc31bc3a65",
+					Name: "data",
+				},
+			},
+			Constraints: []string{"senergy_connector_local_id"},
+		},
+		{
+			Id:      "urn:infai:ses:protocol:p1",
+			Name:    "p1",
+			Handler: "p1",
+			ProtocolSegments: []models.ProtocolSegment{
+				{
+					Id:   "urn:infai:ses:protocol-segment:ps1",
+					Name: "ps1",
+				},
+			},
+		},
+	}
+
+	dtGosund := models.DeviceType{}
+	err = json.Unmarshal([]byte(simplifiedGosundTestDeviceType), &dtGosund)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	dtGosundWithoutLwt := models.DeviceType{}
+	err = json.Unmarshal([]byte(simplifiedGosundTestDeviceTypeWithoutLwt), &dtGosundWithoutLwt)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	deviceTypes := []models.DeviceType{dtGosund, dtGosundWithoutLwt}
+
+	gosundDevice := models.Device{
+		Id:           "urn:infai:ses:device:7e9201ee-3a64-4959-9a19-4429cf9b93d9",
+		Name:         "Plug Kühlschrank",
+		LocalId:      "gosund_sp1_02",
+		DeviceTypeId: "urn:infai:ses:device-type:f4bb792a-b8d3-41d6-98a8-4407b5192d0e",
+		Attributes: []models.Attribute{
+			{Key: "GosundCmdPrefix", Value: "cmnd/"},
+			{Key: "GosundEventPrefix", Value: "tele/"},
+			{Key: "GosundRespPrefix", Value: "stat/"},
+		},
+	}
+
+	gosundDeviceWithoutLwt := models.Device{
+		Id:           "urn:infai:ses:device:7e9201ee-3a64-4959-9a19-4429cf9b93d0",
+		Name:         "Plug Kühlschrank without LWT",
+		LocalId:      "gosund_sp1_03",
+		DeviceTypeId: "urn:infai:ses:device-type:f4bb792a-b8d3-41d6-98a8-4407b5192d00",
+		Attributes: []models.Attribute{
+			{Key: "GosundCmdPrefix", Value: "cmnd/"},
+			{Key: "GosundEventPrefix", Value: "tele/"},
+			{Key: "GosundRespPrefix", Value: "stat/"},
+		},
+	}
+
+	devices := []models.Device{gosundDevice, gosundDeviceWithoutLwt}
+
+	characteristics := []models.Characteristic{
+		{
+			Id:                 "urn:infai:ses:characteristic:819cb017-2331-40f2-8537-15508d6b82c5",
+			Name:               "Binary State (\"0\"/\"1\")",
+			Type:               "https://schema.org/Text",
+			SubCharacteristics: []models.Characteristic{},
+		},
+		{
+			Id:                 "urn:infai:ses:characteristic:c0353532-a8fb-4553-a00b-418cb8a80a65",
+			Name:               "Binary State (0/1)",
+			SubCharacteristics: []models.Characteristic{},
+			Type:               "https://schema.org/Integer",
+		},
+		{
+			Id:                 "urn:infai:ses:characteristic:bc03ef2e-51d5-4034-8bec-75df78e3afee",
+			Name:               "Binary State (online/offline)",
+			SubCharacteristics: []models.Characteristic{},
+			Type:               "https://schema.org/Text",
+		},
+		{
+			Id:                 "urn:infai:ses:characteristic:7dc1bb7e-b256-408a-a6f9-044dc60fdcf5",
+			Name:               "Boolean",
+			SubCharacteristics: []models.Characteristic{},
+			Type:               "https://schema.org/Boolean",
+		},
+	}
+	concepts := []models.Concept{{
+		Id:   "urn:infai:ses:concept:85e11726-620a-4584-96a2-3a6fe4141b2d",
+		Name: "Connection State",
+		CharacteristicIds: []string{
+			"urn:infai:ses:characteristic:819cb017-2331-40f2-8537-15508d6b82c5",
+			"urn:infai:ses:characteristic:c0353532-a8fb-4553-a00b-418cb8a80a65",
+			"urn:infai:ses:characteristic:bc03ef2e-51d5-4034-8bec-75df78e3afee",
+			"urn:infai:ses:characteristic:7dc1bb7e-b256-408a-a6f9-044dc60fdcf5",
+		},
+		BaseCharacteristicId: "urn:infai:ses:characteristic:bc03ef2e-51d5-4034-8bec-75df78e3afee",
+		Conversions: []models.ConverterExtension{
+			{
+				From:            "urn:infai:ses:characteristic:bc03ef2e-51d5-4034-8bec-75df78e3afee",
+				To:              "urn:infai:ses:characteristic:7dc1bb7e-b256-408a-a6f9-044dc60fdcf5",
+				Distance:        1,
+				Formula:         "x == \"online\"",
+				PlaceholderName: "x",
+			},
+			{
+				From:            "urn:infai:ses:characteristic:7dc1bb7e-b256-408a-a6f9-044dc60fdcf5",
+				To:              "urn:infai:ses:characteristic:bc03ef2e-51d5-4034-8bec-75df78e3afee",
+				Distance:        1,
+				Formula:         "x ? \"online\" : \"offline\"",
+				PlaceholderName: "x",
+			},
+			{
+				From:            "urn:infai:ses:characteristic:c0353532-a8fb-4553-a00b-418cb8a80a65",
+				To:              "urn:infai:ses:characteristic:7dc1bb7e-b256-408a-a6f9-044dc60fdcf5",
+				Distance:        1,
+				Formula:         "x == 1",
+				PlaceholderName: "x",
+			},
+			{
+				From:            "urn:infai:ses:characteristic:7dc1bb7e-b256-408a-a6f9-044dc60fdcf5",
+				To:              "urn:infai:ses:characteristic:c0353532-a8fb-4553-a00b-418cb8a80a65",
+				Distance:        1,
+				Formula:         "x ? 1 : 0",
+				PlaceholderName: "x",
+			},
+			{
+				From:            "urn:infai:ses:characteristic:7dc1bb7e-b256-408a-a6f9-044dc60fdcf5",
+				To:              "urn:infai:ses:characteristic:819cb017-2331-40f2-8537-15508d6b82c5",
+				Distance:        1,
+				Formula:         "x ? \"1\" : \"0\"",
+				PlaceholderName: "x",
+			},
+			{
+				From:            "urn:infai:ses:characteristic:819cb017-2331-40f2-8537-15508d6b82c5",
+				To:              "urn:infai:ses:characteristic:7dc1bb7e-b256-408a-a6f9-044dc60fdcf5",
+				Distance:        1,
+				Formula:         "x == \"1\"",
+				PlaceholderName: "x",
+			},
+		},
+	}}
+	functions := []models.Function{{
+		Id:          "urn:infai:ses:measuring-function:b8791b17-cf01-467f-87cf-da2271fffb6d",
+		Name:        "Connection Status",
+		DisplayName: "Connection Status",
+		ConceptId:   "urn:infai:ses:concept:85e11726-620a-4584-96a2-3a6fe4141b2d",
+		RdfType:     "https://senergy.infai.org/ontology/MeasuringFunction",
+	}}
+
+	t.Run("init device repo data", createTestMetadata(docker.TestToken, managerUrl, searchUrl, characteristics, concepts, functions, protocols, deviceTypes, devices))
+
+	mqttClient, err := mqtt.New(ctx, config.MqttBroker, "testlistener", "", "")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	mgwListener, err := mqtt.New(ctx, config.MgwMqttBroker, "testmgwlistener", "", "")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	mgwMessages := util.NewSyncMap[[]string]()
+	err = mgwListener.Subscribe("#", 2, func(topic string, _ bool, payload []byte) {
+		log.Println("mgw", topic, string(payload))
+		mgwMessages.Update(topic, func(messages []string) []string {
+			return append(messages, string(payload))
+		})
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	time.Sleep(time.Second)
+
+	lwtTopic := "tele/gosund_sp1_02/LWT"
+
+	t.Run("send online lwt", func(t *testing.T) {
+		err = mqttClient.Publish(lwtTopic, 2, true, []byte("online"))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+
+	time.Sleep(5 * time.Second)
+
+	_, err = connector.New(ctx, config)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	time.Sleep(5 * time.Second)
+
+	t.Run("send offline lwt", func(t *testing.T) {
+		err = mqttClient.Publish(lwtTopic, 2, true, []byte("offline"))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+
+	time.Sleep(time.Second)
+
+	t.Run("send refresh request", func(t *testing.T) {
+		err = mgwListener.Publish("device-manager/refresh", 2, false, []byte("1"))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+
+	time.Sleep(time.Second)
+
+	t.Run("send online lwt", func(t *testing.T) {
+		err = mqttClient.Publish(lwtTopic, 2, true, []byte("online"))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+
+	time.Sleep(time.Second)
+
+	t.Run("send refresh request 2", func(t *testing.T) {
+		err = mgwListener.Publish("device-manager/refresh", 2, false, []byte("1"))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+
+	time.Sleep(time.Second)
+
+	t.Run("check mgw messages", func(t *testing.T) {
+		list, _ := mgwMessages.Get("device-manager/device/test")
+		actual := map[string][]string{}
+		for _, pl := range list {
+			msg := testMsgType{}
+			err = json.Unmarshal([]byte(pl), &msg)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			actual[msg.DeviceId] = append(actual[msg.DeviceId], msg.Data.State)
+		}
+		expected := map[string][]string{
+			"gosund_sp1_03": {"online", "online", "online"},
+			"gosund_sp1_02": {"offline", "online", "offline", "offline", "online", "online"},
+		}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("ln1=expected, ln2=actual\n%#v\n%#v\n", expected, actual)
+		}
+	})
+}
+
 type testMsgType struct {
 	Method   string `json:"method"`
 	DeviceId string `json:"device_id"`

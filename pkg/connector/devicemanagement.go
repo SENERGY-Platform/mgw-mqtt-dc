@@ -50,18 +50,19 @@ func (this *Connector) updateTopics() (err error) {
 	usedDevices := map[string]TopicDescription{}
 
 	// populate event topic registry and usedDevices
+	// delay subscriptions after device management/registration to ensure evaluation of retained messages
 	oldEvents := this.eventTopicRegister.GetAll()
 	usedEvents := map[string]bool{}
+	addEvents := []TopicDescription{}
+	updateEvents := []TopicDescription{}
+
 	for _, topic := range events {
 		usedEvents[topic.GetEventTopic()] = true
 		usedDevices[topic.GetLocalDeviceId()] = topic
 		if old, ok := this.eventTopicRegister.Get(topic.GetEventTopic()); !ok {
-			err = this.addEvent(topic)
+			addEvents = append(addEvents, topic)
 		} else if !EqualTopicDesc(old, topic) {
-			err = this.updateEvent(topic)
-		}
-		if err != nil {
-			return err
+			updateEvents = append(updateEvents, topic)
 		}
 	}
 	for key, topic := range oldEvents {
@@ -153,6 +154,21 @@ func (this *Connector) updateTopics() (err error) {
 			}
 		}
 	}
+
+	//update subscriptions (only after device registration to ensure evaluation of retained messages)
+	for _, topic := range addEvents {
+		err = this.addEvent(topic)
+		if err != nil {
+			return err
+		}
+	}
+	for _, topic := range updateEvents {
+		err = this.updateEvent(topic)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
