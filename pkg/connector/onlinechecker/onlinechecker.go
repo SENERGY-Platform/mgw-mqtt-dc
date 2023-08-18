@@ -126,6 +126,7 @@ func (this *Checker[T]) CheckAndStoreState(desc T, retained bool, payload []byte
 		if retained {
 			return "", true
 		}
+		this.store(desc, mgw.Online)
 		return mgw.Online, false
 	}
 	service, err := this.getService(desc)
