@@ -24,7 +24,6 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -41,7 +40,7 @@ func Load(config configuration.Config, deviceRepo *devicerepo.DeviceRepo) (topic
 
 func LoadDir(dir string) (topicDescriptions []model.TopicDescription, err error) {
 	topicDescriptions = []model.TopicDescription{}
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return topicDescriptions, err
 	}

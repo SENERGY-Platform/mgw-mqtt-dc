@@ -613,11 +613,13 @@ func TestLwt2(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	_, err = connector.New(ctx, config)
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	t.Run("start connector", func(t *testing.T) {
+		_, err = connector.New(ctx, config)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
 
 	time.Sleep(5 * time.Second)
 

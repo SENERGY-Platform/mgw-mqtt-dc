@@ -52,8 +52,8 @@ func New(ctx context.Context, config configuration.Config, refreshNotifier func(
 		SetClientID(config.MgwMqttClientId).
 		AddBroker(config.MgwMqttBroker).
 		SetResumeSubs(true).
-		SetWriteTimeout(10*time.Second).
-		SetOrderMatters(false).
+		SetWriteTimeout(2*time.Second).
+		SetOrderMatters(true).
 		SetConnectionLostHandler(func(_ paho.Client, err error) {
 			log.Println("connection to mgw broker lost")
 		}).

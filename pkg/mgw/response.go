@@ -37,5 +37,8 @@ func (this *Client) Respond(deviceId string, serviceId string, response Command)
 		log.Println("Error on Client.Publish(): ", token.Error())
 		return token.Error()
 	}
+	if this.debug {
+		log.Println("DEBUG: publish done for", topic)
+	}
 	return err
 }

@@ -19,16 +19,24 @@ package connector
 import "log"
 
 func (this *Connector) EventHandler(topic string, retained bool, payload []byte) {
-	go func() {
-		desc, ok := this.eventTopicRegister.Get(topic)
-		if !ok {
-			return
+	desc, ok := this.eventTopicRegister.Get(topic)
+	if !ok {
+		if this.config.Debug {
+			log.Println("DEBUG: ignore unregistered event", topic, string(payload))
 		}
+		return
+	}
+	if this.config.Debug {
+		log.Println("DEBUG: receive event", topic, string(payload))
+	}
+	go func() {
 		err := this.mgwClient.SendEvent(desc.GetLocalDeviceId(), desc.GetLocalServiceId(), payload)
 		if err != nil {
 			log.Println("ERROR: unable to send event to mgw", err)
 			this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to send event to mgw: "+err.Error())
 		}
+	}()
+	go func() {
 		state, ignore := this.onlineCheck.CheckAndStoreState(desc, retained, payload)
 		if !ignore {
 			err := this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), string(state))
@@ -45,11 +53,11 @@ func (this *Connector) addEvent(topicDesc TopicDescription) (err error) {
 		log.Println("DEBUG: add event listener", topicDesc)
 	}
 	eventTopic := topicDesc.GetEventTopic()
+	this.eventTopicRegister.Set(eventTopic, topicDesc)
 	err = this.eventMqttClient.Subscribe(eventTopic, 2, this.EventHandler)
 	if err != nil {
 		return err
 	}
-	this.eventTopicRegister.Set(eventTopic, topicDesc)
 	return nil
 }
 
