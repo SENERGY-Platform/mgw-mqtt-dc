@@ -56,8 +56,8 @@ func (this *Mqtt) init(ctx context.Context) error {
 		SetClientID(this.clientId).
 		AddBroker(this.brokerUrl).
 		SetResumeSubs(true).
-		SetWriteTimeout(10 * time.Second).
-		SetOrderMatters(false).
+		SetWriteTimeout(2 * time.Second).
+		SetOrderMatters(true).
 		SetConnectionLostHandler(func(_ paho.Client, err error) {
 			log.Println("connection to mqtt broker lost")
 		}).
