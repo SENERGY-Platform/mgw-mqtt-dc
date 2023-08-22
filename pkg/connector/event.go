@@ -24,6 +24,11 @@ func (this *Connector) EventHandler(topic string, retained bool, payload []byte)
 		if !ok {
 			return
 		}
+		err := this.mgwClient.SendEvent(desc.GetLocalDeviceId(), desc.GetLocalServiceId(), payload)
+		if err != nil {
+			log.Println("ERROR: unable to send event to mgw", err)
+			this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to send event to mgw: "+err.Error())
+		}
 		state, ignore := this.onlineCheck.CheckAndStoreState(desc, retained, payload)
 		if !ignore {
 			err := this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), string(state))
@@ -31,11 +36,6 @@ func (this *Connector) EventHandler(topic string, retained bool, payload []byte)
 				log.Println("ERROR: unable to send device info to mgw", err)
 				this.mgwClient.SendClientError("unable to send device info to mgw: " + err.Error())
 			}
-		}
-		err := this.mgwClient.SendEvent(desc.GetLocalDeviceId(), desc.GetLocalServiceId(), payload)
-		if err != nil {
-			log.Println("ERROR: unable to send event to mgw", err)
-			this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to send event to mgw: "+err.Error())
 		}
 	}()
 }
