@@ -9,7 +9,7 @@ require (
 	github.com/SENERGY-Platform/marshaller v0.0.0-20230901075730-2e60fc7c926e
 	github.com/SENERGY-Platform/models/go v0.0.0-20230824080159-16585960df38
 	github.com/SENERGY-Platform/permission-search v0.0.0-20230829121111-76c8c176bddb
-	github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20231016075812-114d222c2706
+	github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20231020071420-3e427f845516
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -22,7 +22,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Knetic/govaluate v3.0.0+incompatible // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
-	github.com/Microsoft/hcsshim v0.11.1 // indirect
+	github.com/Microsoft/hcsshim v0.11.2 // indirect
 	github.com/RyanCarrier/dijkstra v1.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/clbanning/mxj v1.8.4 // indirect
@@ -70,7 +70,7 @@ require (
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
-	google.golang.org/grpc v1.58.3 // indirect
+	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/go-playground/colors.v1 v1.2.0 // indirect
 )
