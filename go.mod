@@ -9,11 +9,11 @@ require (
 	github.com/SENERGY-Platform/marshaller v0.0.0-20231101072104-348b10942fb3
 	github.com/SENERGY-Platform/models/go v0.0.0-20230824080159-16585960df38
 	github.com/SENERGY-Platform/permission-search v0.0.0-20231027062307-b6e4c722fdf0
-	github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20231020071420-3e427f845516
+	github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20231101115659-52fe1e9c0235
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/testcontainers/testcontainers-go v0.25.0
+	github.com/testcontainers/testcontainers-go v0.26.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
