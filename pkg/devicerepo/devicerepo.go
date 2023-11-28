@@ -20,8 +20,9 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/auth"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/cache"
 	"github.com/SENERGY-Platform/models/go/models"
+	"github.com/SENERGY-Platform/service-commons/pkg/cache"
+	"github.com/SENERGY-Platform/service-commons/pkg/cache/fallback"
 	"io"
 	"log"
 	"net/http"
@@ -32,22 +33,22 @@ import (
 )
 
 func New(config RepoConfig, auth *auth.Auth) (result *DeviceRepo, err error) {
-	result = &DeviceRepo{
-		auth:   auth,
-		config: config,
-	}
 	cacheDuration, err := time.ParseDuration(config.CacheDuration)
 	if err != nil {
 		return result, err
 	}
-	if config.FallbackFile == "" {
-		result.cache = cache.NewCache(cacheDuration)
-	} else {
-		fallback, err := cache.NewFallback(config.FallbackFile)
-		if err != nil {
-			return result, err
-		}
-		result.cache = cache.NewCacheWithFallback(cacheDuration, fallback)
+	result = &DeviceRepo{
+		auth:            auth,
+		config:          config,
+		cacheExpiration: cacheDuration,
+	}
+	cacheConf := cache.Config{}
+	if config.FallbackFile != "" && config.FallbackFile != "-" {
+		cacheConf.FallbackProvider = fallback.NewProvider(config.FallbackFile)
+	}
+	result.cache, err = cache.New(cacheConf)
+	if err != nil {
+		return result, err
 	}
 	return result, nil
 }
@@ -59,9 +60,10 @@ type RepoConfig struct {
 }
 
 type DeviceRepo struct {
-	auth   *auth.Auth
-	cache  *cache.Cache
-	config RepoConfig
+	auth            *auth.Auth
+	cache           *cache.Cache
+	config          RepoConfig
+	cacheExpiration time.Duration
 }
 
 func (this *DeviceRepo) GetJson(token string, endpoint string, result interface{}) (err error) {
@@ -104,10 +106,9 @@ func (this *DeviceRepo) GetToken() (string, error) {
 }
 
 func (this *DeviceRepo) GetCharacteristic(id string) (result models.Characteristic, err error) {
-	err = this.cache.Use("characteristics."+id, func() (interface{}, error) {
+	return cache.Use(this.cache, "characteristics."+id, func() (models.Characteristic, error) {
 		return this.getCharacteristic(id)
-	}, &result)
-	return
+	}, this.cacheExpiration)
 }
 
 func (this *DeviceRepo) getCharacteristic(id string) (result models.Characteristic, err error) {
@@ -121,10 +122,9 @@ func (this *DeviceRepo) getCharacteristic(id string) (result models.Characterist
 }
 
 func (this *DeviceRepo) GetConcept(id string) (result models.Concept, err error) {
-	err = this.cache.Use("concept."+id, func() (interface{}, error) {
+	return cache.Use(this.cache, "concept."+id, func() (models.Concept, error) {
 		return this.getConcept(id)
-	}, &result)
-	return
+	}, this.cacheExpiration)
 }
 
 func (this *DeviceRepo) getConcept(id string) (result models.Concept, err error) {
@@ -147,10 +147,9 @@ func (this *DeviceRepo) GetConceptIdOfFunction(id string) string {
 }
 
 func (this *DeviceRepo) GetFunction(id string) (result models.Function, err error) {
-	err = this.cache.Use("functions."+id, func() (interface{}, error) {
+	return cache.Use(this.cache, "functions."+id, func() (models.Function, error) {
 		return this.getFunction(id)
-	}, &result)
-	return
+	}, this.cacheExpiration)
 }
 
 func (this *DeviceRepo) getFunction(id string) (result models.Function, err error) {
@@ -163,10 +162,9 @@ func (this *DeviceRepo) getFunction(id string) (result models.Function, err erro
 }
 
 func (this *DeviceRepo) GetAspectNode(id string) (result models.AspectNode, err error) {
-	err = this.cache.Use("aspect-nodes."+id, func() (interface{}, error) {
+	return cache.Use(this.cache, "aspect-nodes."+id, func() (models.AspectNode, error) {
 		return this.getAspectNode(id)
-	}, &result)
-	return
+	}, this.cacheExpiration)
 }
 
 func (this *DeviceRepo) getAspectNode(id string) (result models.AspectNode, err error) {
@@ -179,10 +177,9 @@ func (this *DeviceRepo) getAspectNode(id string) (result models.AspectNode, err 
 }
 
 func (this *DeviceRepo) GetDeviceType(id string) (result models.DeviceType, err error) {
-	err = this.cache.Use("device-types."+id, func() (interface{}, error) {
+	return cache.Use(this.cache, "device-types."+id, func() (models.DeviceType, error) {
 		return this.getDeviceType(id)
-	}, &result)
-	return
+	}, this.cacheExpiration)
 }
 
 func (this *DeviceRepo) getDeviceType(id string) (result models.DeviceType, err error) {
