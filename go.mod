@@ -9,7 +9,7 @@ require (
 	github.com/SENERGY-Platform/marshaller v0.0.3
 	github.com/SENERGY-Platform/models/go v0.0.0-20230824080159-16585960df38
 	github.com/SENERGY-Platform/permission-search v0.0.1
-	github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20240102085656-1610948334c8
+	github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20240105124530-e51c7fbf01e8
 	github.com/SENERGY-Platform/service-commons v0.0.0-20231115074650-7021aeae60e4
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/julienschmidt/httprouter v1.3.0
@@ -32,7 +32,7 @@ require (
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker v24.0.7+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

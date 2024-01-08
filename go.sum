@@ -24,6 +24,8 @@ github.com/SENERGY-Platform/permission-search v0.0.1 h1:W8mf8aRUzhfljbO5mRg5rg+p
 github.com/SENERGY-Platform/permission-search v0.0.1/go.mod h1:TxlFzRwUfDp9gordsK5dehq83AYDavt2876ElMP9n/E=
 github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20240102085656-1610948334c8 h1:DwEOOV7UOmZ/7o1F0SFhsY+bKwYa9IREZB+oanCOUEU=
 github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20240102085656-1610948334c8/go.mod h1:ZSzAzac3OMOn7FO37fA4gSfGCemnDgN1s3pAxi7AHNg=
+github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20240105124530-e51c7fbf01e8 h1:r4agDKTaUHyKI+hfe1mIIHXUkPMHmqjl0Y5YSwHfg/E=
+github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20240105124530-e51c7fbf01e8/go.mod h1:XZxKTYn4/srucQXUlnFRH6oM43tWXBL2WdLGlq0sO8c=
 github.com/SENERGY-Platform/service-commons v0.0.0-20231115074650-7021aeae60e4 h1:bEEbT/oUAT4g+pF1GWA212zJnib5tSrt9wT56VLKwk4=
 github.com/SENERGY-Platform/service-commons v0.0.0-20231115074650-7021aeae60e4/go.mod h1:1JjqDM3qfVrqU37VXRUlLIFRVWbnaXttsMEKNH8yCRA=
 github.com/aws/aws-sdk-go v1.42.27/go.mod h1:OGr6lGMAKGlG9CVrYnWYDKIyb829c6EVBRjxqjmPepc=
@@ -53,6 +55,8 @@ github.com/docker/docker v24.0.7+incompatible h1:Wo6l37AuwP3JaMnZa226lzVXGA3F9Ig
 github.com/docker/docker v24.0.7+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/go-connections v0.4.0 h1:El9xVISelRB7BuFusrZozjnkIM5YnzCViNKohAFqRJQ=
 github.com/docker/go-connections v0.4.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
+github.com/docker/go-connections v0.5.0 h1:USnMq7hx7gwdVZq1L49hLXaFtUdTADjXGp+uj1Br63c=
+github.com/docker/go-connections v0.5.0/go.mod h1:ov60Kzw0kKElRwhNs9UlUHAE/F9Fe6GLaXnqyDdmEXc=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/eapache/go-resiliency v1.5.0 h1:dRsaR00whmQD+SgVKlq/vCRFNgtEb5yppyeVos3Yce0=
