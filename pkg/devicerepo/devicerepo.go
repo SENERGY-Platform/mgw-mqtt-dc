@@ -108,6 +108,11 @@ func (this *DeviceRepo) GetToken() (string, error) {
 func (this *DeviceRepo) GetCharacteristic(id string) (result models.Characteristic, err error) {
 	return cache.Use(this.cache, "characteristics."+id, func() (models.Characteristic, error) {
 		return this.getCharacteristic(id)
+	}, func(characteristic models.Characteristic) error {
+		if characteristic.Id == "" {
+			return errors.New("invalid characteristic returned from cache")
+		}
+		return nil
 	}, this.cacheExpiration)
 }
 
@@ -124,6 +129,11 @@ func (this *DeviceRepo) getCharacteristic(id string) (result models.Characterist
 func (this *DeviceRepo) GetConcept(id string) (result models.Concept, err error) {
 	return cache.Use(this.cache, "concept."+id, func() (models.Concept, error) {
 		return this.getConcept(id)
+	}, func(concept models.Concept) error {
+		if concept.Id == "" {
+			return errors.New("invalid concept returned from cache")
+		}
+		return nil
 	}, this.cacheExpiration)
 }
 
@@ -149,6 +159,11 @@ func (this *DeviceRepo) GetConceptIdOfFunction(id string) string {
 func (this *DeviceRepo) GetFunction(id string) (result models.Function, err error) {
 	return cache.Use(this.cache, "functions."+id, func() (models.Function, error) {
 		return this.getFunction(id)
+	}, func(function models.Function) error {
+		if function.Id == "" {
+			return errors.New("invalid function returned from cache")
+		}
+		return nil
 	}, this.cacheExpiration)
 }
 
@@ -164,6 +179,11 @@ func (this *DeviceRepo) getFunction(id string) (result models.Function, err erro
 func (this *DeviceRepo) GetAspectNode(id string) (result models.AspectNode, err error) {
 	return cache.Use(this.cache, "aspect-nodes."+id, func() (models.AspectNode, error) {
 		return this.getAspectNode(id)
+	}, func(node models.AspectNode) error {
+		if node.Id == "" {
+			return errors.New("invalid node returned from cache")
+		}
+		return nil
 	}, this.cacheExpiration)
 }
 
@@ -179,6 +199,11 @@ func (this *DeviceRepo) getAspectNode(id string) (result models.AspectNode, err 
 func (this *DeviceRepo) GetDeviceType(id string) (result models.DeviceType, err error) {
 	return cache.Use(this.cache, "device-types."+id, func() (models.DeviceType, error) {
 		return this.getDeviceType(id)
+	}, func(deviceType models.DeviceType) error {
+		if deviceType.Id == "" {
+			return errors.New("invalid device type returned from cache")
+		}
+		return nil
 	}, this.cacheExpiration)
 }
 
