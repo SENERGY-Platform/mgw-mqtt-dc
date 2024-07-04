@@ -130,7 +130,7 @@ func GetDeviceInfos(repo *devicerepo.DeviceRepo, searchUrl string, filterDevices
 	})
 
 	//local filter because filtering in permission-search may not be complete if device attributes contain Attributes{{Key:"foo", Value: filterDevicesByAttribute}, {Key:AttributeUsedForGenerator, Value: "bar"}}
-	devices = util.ListFilter(permsearchDevices, func(d models.Device) bool {
+	devices = util.ListFilter(devices, func(d models.Device) bool {
 		return filterDevicesByAttribute == "" || util.ListContains(d.Attributes, func(a models.Attribute) bool {
 			return a.Key == AttributeUsedForGenerator && a.Value == filterDevicesByAttribute
 		})
