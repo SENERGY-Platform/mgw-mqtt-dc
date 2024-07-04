@@ -21,6 +21,7 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/models/go/models"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
+	"log"
 )
 
 const AttributeUsedForGenerator = "senergy/local-mqtt"
@@ -117,9 +118,15 @@ func GetDeviceInfos(repo *devicerepo.DeviceRepo, searchUrl string, filterDevices
 	if err != nil {
 		return devices, deviceTypes, err
 	}
+	expectedOwnerId := expectedOwnerJwt.GetUserId()
 
+	log.Println("filter devices with different owner as", expectedOwnerId)
 	devices = util.ListFilter(permsearchDevices, func(d models.Device) bool {
-		return d.OwnerId == expectedOwnerJwt.GetUserId()
+		keep := d.OwnerId == expectedOwnerId
+		if !keep {
+			log.Println("ignore", d.Id, d.LocalId, d.Name, "because", d.OwnerId, "!=", expectedOwnerId)
+		}
+		return keep
 	})
 
 	//local filter because filtering in permission-search may not be complete if device attributes contain Attributes{{Key:"foo", Value: filterDevicesByAttribute}, {Key:AttributeUsedForGenerator, Value: "bar"}}
