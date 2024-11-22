@@ -12,6 +12,7 @@
     "mqtt_event_client_id": "",
     "mqtt_cmd_client_id": "",
     "mqtt_broker": "",
+    "mqtt_insecure_skip_verify": false,
     "delete_devices": true,
     "max_correlation_id_age": "90s",
 

@@ -118,6 +118,17 @@ func FMap5[I1 any, I2 any, I3 any, I4 any, I5 any, ResultType any, NewResultType
 	}
 }
 
+func FMap6[I1 any, I2 any, I3 any, I4 any, I5 any, I6 any, ResultType any, NewResultType any](f func(in1 I1, in2 I2, in3 I3, in4 I4, in5 I5, in6 I6) (ResultType, error), c func(ResultType) NewResultType) func(in1 I1, in2 I2, in3 I3, in4 I4, in5 I5, in6 I6) (NewResultType, error) {
+	return func(in1 I1, in2 I2, in3 I3, in4 I4, in5 I5, in6 I6) (result NewResultType, err error) {
+		temp, err := f(in1, in2, in3, in4, in5, in6)
+		if err != nil {
+			return result, err
+		}
+		result = c(temp)
+		return result, err
+	}
+}
+
 func MapKeys[T1 comparable, T2 any](m map[T1]T2) (result []T1) {
 	for k, _ := range m {
 		result = append(result, k)

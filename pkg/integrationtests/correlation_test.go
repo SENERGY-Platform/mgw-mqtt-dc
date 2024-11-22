@@ -70,7 +70,7 @@ func TestCorrelationIdMatching(t *testing.T) {
 		MaxCorrelationIdAge:   "5s",
 	}
 
-	mqttClient, err := mqtt.New(ctx, conf.MqttBroker, "testpublisher", "", "")
+	mqttClient, err := mqtt.New(ctx, conf.MqttBroker, "testpublisher", "", "", conf.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return
@@ -86,7 +86,7 @@ func TestCorrelationIdMatching(t *testing.T) {
 		return
 	}
 
-	mgwMqttClient, err := mqtt.New(ctx, conf.MgwMqttBroker, "testlistener", "", "")
+	mgwMqttClient, err := mqtt.New(ctx, conf.MgwMqttBroker, "testlistener", "", "", conf.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return

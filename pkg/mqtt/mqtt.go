@@ -18,33 +18,37 @@ package mqtt
 
 import (
 	"context"
-	paho "github.com/eclipse/paho.mqtt.golang"
+	"crypto/tls"
 	"log"
 	"sync"
 	"time"
+
+	paho "github.com/eclipse/paho.mqtt.golang"
 )
 
-func New(ctx context.Context, brokerUrl string, clientId string, username string, password string) (client *Mqtt, err error) {
+func New(ctx context.Context, brokerUrl string, clientId string, username string, password string, insecureSkipVerify bool) (client *Mqtt, err error) {
 	client = &Mqtt{
-		subscriptions:    map[string]paho.MessageHandler{},
-		subscriptionsMux: sync.Mutex{},
-		mqtt:             nil,
-		brokerUrl:        brokerUrl,
-		clientId:         clientId,
-		username:         username,
-		password:         password,
+		subscriptions:      map[string]paho.MessageHandler{},
+		subscriptionsMux:   sync.Mutex{},
+		mqtt:               nil,
+		brokerUrl:          brokerUrl,
+		clientId:           clientId,
+		username:           username,
+		password:           password,
+		insecureSkipVerify: insecureSkipVerify,
 	}
 	return client, client.init(ctx)
 }
 
 type Mqtt struct {
-	subscriptions    map[string]paho.MessageHandler
-	subscriptionsMux sync.Mutex
-	mqtt             paho.Client
-	brokerUrl        string
-	clientId         string
-	username         string
-	password         string
+	subscriptions      map[string]paho.MessageHandler
+	subscriptionsMux   sync.Mutex
+	mqtt               paho.Client
+	brokerUrl          string
+	clientId           string
+	username           string
+	password           string
+	insecureSkipVerify bool
 }
 
 func (this *Mqtt) init(ctx context.Context) error {
@@ -67,6 +71,9 @@ func (this *Mqtt) init(ctx context.Context) error {
 			if err != nil {
 				log.Fatal("FATAL: ", err)
 			}
+		}).
+		SetTLSConfig(&tls.Config{
+			InsecureSkipVerify: this.insecureSkipVerify,
 		})
 
 	this.mqtt = paho.NewClient(options)

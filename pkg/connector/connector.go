@@ -89,12 +89,12 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 		return result, err
 	}
 
-	commandMqttClient, err := mqttFactory(ctx, config.MqttBroker, config.MqttCmdClientId, config.MqttUser, config.MqttPw)
+	commandMqttClient, err := mqttFactory(ctx, config.MqttBroker, config.MqttCmdClientId, config.MqttUser, config.MqttPw, config.MqttInsecureSkipVerify)
 	if err != nil {
 		return result, err
 	}
 
-	eventMqttClient, err := mqttFactory(ctx, config.MqttBroker, config.MqttEventClientId, config.MqttUser, config.MqttPw)
+	eventMqttClient, err := mqttFactory(ctx, config.MqttBroker, config.MqttEventClientId, config.MqttUser, config.MqttPw, config.MqttInsecureSkipVerify)
 	if err != nil {
 		return result, err
 	}

@@ -252,13 +252,13 @@ func TestLwt(t *testing.T) {
 
 	t.Run("init device repo data", createTestMetadata(docker.TestToken, managerUrl, searchUrl, characteristics, concepts, functions, protocols, deviceTypes, devices))
 
-	mqttClient, err := mqtt.New(ctx, config.MqttBroker, "testlistener", "", "")
+	mqttClient, err := mqtt.New(ctx, config.MqttBroker, "testlistener", "", "", config.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	mgwListener, err := mqtt.New(ctx, config.MgwMqttBroker, "testmgwlistener", "", "")
+	mgwListener, err := mqtt.New(ctx, config.MgwMqttBroker, "testmgwlistener", "", "", config.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return
@@ -576,13 +576,13 @@ func TestLwt2(t *testing.T) {
 
 	t.Run("init device repo data", createTestMetadata(docker.TestToken, managerUrl, searchUrl, characteristics, concepts, functions, protocols, deviceTypes, devices))
 
-	mqttClient, err := mqtt.New(ctx, config.MqttBroker, "testlistener", "", "")
+	mqttClient, err := mqtt.New(ctx, config.MqttBroker, "testlistener", "", "", config.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	mgwListener, err := mqtt.New(ctx, config.MgwMqttBroker, "testmgwlistener", "", "")
+	mgwListener, err := mqtt.New(ctx, config.MgwMqttBroker, "testmgwlistener", "", "", config.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return

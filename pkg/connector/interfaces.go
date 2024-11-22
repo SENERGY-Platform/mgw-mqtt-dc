@@ -30,7 +30,7 @@ type MgwFactory = GenericMgwFactory[MgwClient]
 type GenericTopicDescriptionProvider[T TopicDescription] func(config configuration.Config, deviceRepo *devicerepo.DeviceRepo) ([]T, error)
 type TopicDescriptionProvider = GenericTopicDescriptionProvider[TopicDescription]
 
-type GenericMqttFactory[T MqttClient] func(ctx context.Context, brokerUrl string, clientId string, username string, password string) (T, error)
+type GenericMqttFactory[T MqttClient] func(ctx context.Context, brokerUrl string, clientId string, username string, password string, insecureSkipVerify bool) (T, error)
 type MqttFactory = GenericMqttFactory[MqttClient]
 
 type MgwClient interface {
@@ -99,5 +99,5 @@ func NewMgwFactory[MgwClientType MgwClient](f GenericMgwFactory[MgwClientType]) 
 }
 
 func NewMqttFactory[MqttClientType MqttClient](f GenericMqttFactory[MqttClientType]) (result MqttFactory) {
-	return util.FMap5(f, func(element MqttClientType) MqttClient { return element })
+	return util.FMap6(f, func(element MqttClientType) MqttClient { return element })
 }

@@ -68,13 +68,13 @@ func TestEventForwarding(t *testing.T) {
 		MaxCorrelationIdAge:   "1m",
 	}
 
-	mqttPublisher, err := mqtt.New(ctx, conf.MqttBroker, "testpublisher", "", "")
+	mqttPublisher, err := mqtt.New(ctx, conf.MqttBroker, "testpublisher", "", "", conf.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	mgwListener, err := mqtt.New(ctx, conf.MgwMqttBroker, "testlistener", "", "")
+	mgwListener, err := mqtt.New(ctx, conf.MgwMqttBroker, "testlistener", "", "", conf.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return

@@ -63,7 +63,7 @@ func TestInitialDeviceInfo(t *testing.T) {
 		MaxCorrelationIdAge:   "1m",
 	}
 
-	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "")
+	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "", conf.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return
@@ -249,7 +249,7 @@ func TestTimedDeviceInfoUpdate(t *testing.T) {
 		MaxCorrelationIdAge:   "1m",
 	}
 
-	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "")
+	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "", conf.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return
@@ -489,7 +489,7 @@ func TestTimedDeviceInfoUpdateWithDelete(t *testing.T) {
 		MaxCorrelationIdAge:   "1m",
 	}
 
-	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "")
+	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "", conf.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return
@@ -724,7 +724,7 @@ func TestSignaledDeviceInfoUpdate(t *testing.T) {
 		MaxCorrelationIdAge:   "1m",
 	}
 
-	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "")
+	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "", conf.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return
@@ -963,7 +963,7 @@ func TestSignaledDeviceInfoUpdateWithDelete(t *testing.T) {
 		MaxCorrelationIdAge:   "1m",
 	}
 
-	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "")
+	mqttListener, err := mqtt.New(ctx, conf.MqttBroker, "testlistener", "", "", conf.MqttInsecureSkipVerify)
 	if err != nil {
 		t.Error(err)
 		return
