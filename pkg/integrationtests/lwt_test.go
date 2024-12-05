@@ -45,7 +45,7 @@ func TestLwt(t *testing.T) {
 		return
 	}
 
-	managerUrl, repoUrl, searchUrl, err := docker.DeviceManagerWithDependencies(ctx, wg)
+	managerUrl, repoUrl, _, err := docker.DeviceManagerWithDependencies(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return
@@ -71,7 +71,6 @@ func TestLwt(t *testing.T) {
 	config.MqttBroker = "tcp://localhost:" + mqttPort
 	config.MgwMqttBroker = "tcp://localhost:" + mgwPort
 	config.GeneratorDeviceRepositoryUrl = repoUrl
-	config.GeneratorPermissionSearchUrl = searchUrl
 	config.ConnectorId = "test"
 	config.MgwMqttClientId = "mgwclientid"
 	config.MqttCmdClientId = "mqttcmdclientid"
@@ -250,7 +249,7 @@ func TestLwt(t *testing.T) {
 		RdfType:     "https://senergy.infai.org/ontology/MeasuringFunction",
 	}}
 
-	t.Run("init device repo data", createTestMetadata(docker.TestToken, managerUrl, searchUrl, characteristics, concepts, functions, protocols, deviceTypes, devices))
+	t.Run("init device repo data", createTestMetadata(docker.TestToken, managerUrl, characteristics, concepts, functions, protocols, deviceTypes, devices))
 
 	mqttClient, err := mqtt.New(ctx, config.MqttBroker, "testlistener", "", "", config.MqttInsecureSkipVerify)
 	if err != nil {
@@ -369,7 +368,7 @@ func TestLwt2(t *testing.T) {
 		return
 	}
 
-	managerUrl, repoUrl, searchUrl, err := docker.DeviceManagerWithDependencies(ctx, wg)
+	managerUrl, repoUrl, _, err := docker.DeviceManagerWithDependencies(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return
@@ -395,7 +394,6 @@ func TestLwt2(t *testing.T) {
 	config.MqttBroker = "tcp://localhost:" + mqttPort
 	config.MgwMqttBroker = "tcp://localhost:" + mgwPort
 	config.GeneratorDeviceRepositoryUrl = repoUrl
-	config.GeneratorPermissionSearchUrl = searchUrl
 	config.ConnectorId = "test"
 	config.MgwMqttClientId = "mgwclientid"
 	config.MqttCmdClientId = "mqttcmdclientid"
@@ -574,7 +572,7 @@ func TestLwt2(t *testing.T) {
 		RdfType:     "https://senergy.infai.org/ontology/MeasuringFunction",
 	}}
 
-	t.Run("init device repo data", createTestMetadata(docker.TestToken, managerUrl, searchUrl, characteristics, concepts, functions, protocols, deviceTypes, devices))
+	t.Run("init device repo data", createTestMetadata(docker.TestToken, managerUrl, characteristics, concepts, functions, protocols, deviceTypes, devices))
 
 	mqttClient, err := mqtt.New(ctx, config.MqttBroker, "testlistener", "", "", config.MqttInsecureSkipVerify)
 	if err != nil {

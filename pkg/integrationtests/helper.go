@@ -29,7 +29,7 @@ import (
 	"time"
 )
 
-func createTestMetadata(token string, managerUrl string, searchUrl string, characteristics []models.Characteristic, concepts []models.Concept, functions []models.Function, protocols []models.Protocol, dts []models.DeviceType, devices []models.Device) func(t *testing.T) {
+func createTestMetadata(token string, managerUrl string, characteristics []models.Characteristic, concepts []models.Concept, functions []models.Function, protocols []models.Protocol, dts []models.DeviceType, devices []models.Device) func(t *testing.T) {
 	return func(t *testing.T) {
 		for _, c := range characteristics {
 			t.Run("create characteristic "+c.Name, createTestCharacteristic(token, managerUrl, c))
@@ -42,9 +42,6 @@ func createTestMetadata(token string, managerUrl string, searchUrl string, chara
 		for _, p := range protocols {
 			t.Run("create protocol "+p.Name, createTestProtocol(token, managerUrl, p))
 		}
-		for _, p := range protocols {
-			t.Run("wait for protocol cqrs "+p.Name, waitForCqrs(token, searchUrl, managerUrl, "protocols", p.Id))
-		}
 
 		for _, f := range functions {
 			t.Run("create function "+f.Name, createTestFunction(token, managerUrl, f))
@@ -53,15 +50,9 @@ func createTestMetadata(token string, managerUrl string, searchUrl string, chara
 		for _, dt := range dts {
 			t.Run("create device-type "+dt.Name, createTestDeviceType(token, managerUrl, dt))
 		}
-		for _, dt := range dts {
-			t.Run("wait for device-type cqrs "+dt.Name, waitForCqrs(token, searchUrl, managerUrl, "device-types", dt.Id))
-		}
 
 		for _, d := range devices {
 			t.Run("create device "+d.Name, createTestDevice(token, managerUrl, d))
-		}
-		for _, d := range devices {
-			t.Run("wait for device cqrs "+d.Name, waitForCqrs(token, searchUrl, managerUrl, "devices", d.Id))
 		}
 	}
 }
@@ -74,7 +65,7 @@ func createTestProtocol(token string, managerUrl string, protocol models.Protoco
 			t.Error(err)
 			return
 		}
-		req, err := http.NewRequest("PUT", managerUrl+"/protocols/"+protocol.Id, requestBody)
+		req, err := http.NewRequest("PUT", managerUrl+"/protocols/"+protocol.Id+"?wait=true", requestBody)
 		if err != nil {
 			t.Error(err)
 			return
@@ -102,7 +93,7 @@ func createTestCharacteristic(token string, managerUrl string, c models.Characte
 			t.Error(err)
 			return
 		}
-		req, err := http.NewRequest("PUT", managerUrl+"/characteristics/"+c.Id, requestBody)
+		req, err := http.NewRequest("PUT", managerUrl+"/characteristics/"+c.Id+"?wait=true", requestBody)
 		if err != nil {
 			t.Error(err)
 			return
@@ -130,7 +121,7 @@ func createTestConcept(token string, managerUrl string, c models.Concept) func(t
 			t.Error(err)
 			return
 		}
-		req, err := http.NewRequest("PUT", managerUrl+"/concepts/"+c.Id, requestBody)
+		req, err := http.NewRequest("PUT", managerUrl+"/concepts/"+c.Id+"?wait=true", requestBody)
 		if err != nil {
 			t.Error(err)
 			return
@@ -158,7 +149,7 @@ func createTestFunction(token string, managerUrl string, f models.Function) func
 			t.Error(err)
 			return
 		}
-		req, err := http.NewRequest("PUT", managerUrl+"/functions/"+f.Id, requestBody)
+		req, err := http.NewRequest("PUT", managerUrl+"/functions/"+f.Id+"?wait=true", requestBody)
 		if err != nil {
 			t.Error(err)
 			return
@@ -186,7 +177,7 @@ func createTestDeviceType(token string, managerUrl string, dt models.DeviceType)
 			t.Error(err)
 			return
 		}
-		req, err := http.NewRequest("PUT", managerUrl+"/device-types/"+dt.Id, requestBody)
+		req, err := http.NewRequest("PUT", managerUrl+"/device-types/"+dt.Id+"?wait=true", requestBody)
 		if err != nil {
 			t.Error(err)
 			return
@@ -214,7 +205,7 @@ func createTestDevice(token string, managerUrl string, device models.Device) fun
 			t.Error(err)
 			return
 		}
-		req, err := http.NewRequest("PUT", managerUrl+"/devices/"+device.Id, requestBody)
+		req, err := http.NewRequest("PUT", managerUrl+"/devices/"+device.Id+"?wait=true", requestBody)
 		if err != nil {
 			t.Error(err)
 			return

@@ -28,7 +28,7 @@ func LoadWithGenerator(config configuration.Config, repo *devicerepo.DeviceRepo)
 	defer func() {
 		topicDescriptions, err = LoadDir(config.DeviceDescriptionsDir)
 	}()
-	devices, deviceTypes, err := generator.GetDeviceInfos(repo, config.GeneratorPermissionSearchUrl, config.GeneratorFilterDevicesByAttribute)
+	devices, deviceTypes, err := generator.GetDeviceInfos(repo, config.GeneratorFilterDevicesByAttribute)
 	if err != nil {
 		log.Println("WARNING: unable to generate topic descriptions:", err)
 		return nil, err

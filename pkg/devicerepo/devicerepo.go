@@ -19,6 +19,8 @@ package devicerepo
 import (
 	"encoding/json"
 	"errors"
+	"github.com/SENERGY-Platform/device-repository/lib/client"
+	"github.com/SENERGY-Platform/device-repository/lib/model"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/auth"
 	"github.com/SENERGY-Platform/models/go/models"
 	"github.com/SENERGY-Platform/service-commons/pkg/cache"
@@ -41,6 +43,7 @@ func New(config RepoConfig, auth *auth.Auth) (result *DeviceRepo, err error) {
 		auth:            auth,
 		config:          config,
 		cacheExpiration: cacheDuration,
+		client:          client.NewClient(config.DeviceRepositoryUrl),
 	}
 	cacheConf := cache.Config{}
 	if config.FallbackFile != "" && config.FallbackFile != "-" {
@@ -64,6 +67,7 @@ type DeviceRepo struct {
 	cache           *cache.Cache
 	config          RepoConfig
 	cacheExpiration time.Duration
+	client          client.Interface
 }
 
 func (this *DeviceRepo) GetJson(token string, endpoint string, result interface{}) (err error) {
@@ -227,4 +231,12 @@ func (this *DeviceRepo) GetService(deviceTypeId string, localServiceId string) (
 		}
 	}
 	return result, errors.New("service not found")
+}
+
+func (this *DeviceRepo) ListDeviceTypes(token string, listOptions model.DeviceTypeListOptions) (result []models.DeviceType, err error, errCode int) {
+	return this.client.ListDeviceTypesV3(token, listOptions)
+}
+
+func (this *DeviceRepo) ListDevices(token string, options model.DeviceListOptions) (result []models.Device, err error, errCode int) {
+	return this.client.ListDevices(token, options)
 }

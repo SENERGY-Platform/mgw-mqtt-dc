@@ -17,6 +17,7 @@
 package generator
 
 import (
+	"github.com/SENERGY-Platform/device-repository/lib/client"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/models/go/models"
@@ -29,38 +30,21 @@ const AttributeUsedForGenerator = "senergy/local-mqtt"
 // GetDeviceInfos returns all device-types with attribute AttributeUsedForGenerator
 // and devices matching a device-type
 // if filterDevicesByAttribute != "" the devices will be filtered by AttributeUsedForGenerator == filterDevicesByAttribute
-func GetDeviceInfos(repo *devicerepo.DeviceRepo, searchUrl string, filterDevicesByAttribute string) (devices []models.Device, deviceTypes []models.DeviceType, err error) {
+func GetDeviceInfos(repo *devicerepo.DeviceRepo, filterDevicesByAttribute string) (devices []models.Device, deviceTypes []models.DeviceType, err error) {
 	token, err := repo.GetToken()
 	if err != nil {
 		return devices, deviceTypes, err
 	}
-	type IdWrapper struct {
-		Id string `json:"id"`
-	}
-	wrappedDeviceTypeIds := []IdWrapper{}
-	err, _ = PermissionSearch(token, searchUrl, QueryMessage{
-		Resource: "device-types",
-		Find: &QueryFind{
-			QueryListCommons: QueryListCommons{
-				Limit:  9999,
-				Offset: 0,
-				Rights: "r",
-				SortBy: "name",
-			},
-			Filter: &Selection{
-				Condition: &ConditionConfig{
-					Feature:   "features.attributes.key",
-					Operation: QueryEqualOperation,
-					Value:     AttributeUsedForGenerator,
-				},
-			},
-		},
-	}, &wrappedDeviceTypeIds)
+	deviceTypes, err, _ = repo.ListDeviceTypes(token, client.DeviceTypeListOptions{
+		Limit:         9999,
+		Offset:        0,
+		AttributeKeys: []string{AttributeUsedForGenerator},
+	})
 	if err != nil {
 		return devices, deviceTypes, err
 	}
 
-	dtIds := util.ListMap(wrappedDeviceTypeIds, func(from IdWrapper) string {
+	dtIds := util.ListMap(deviceTypes, func(from models.DeviceType) string {
 		return from.Id
 	})
 
@@ -68,48 +52,18 @@ func GetDeviceInfos(repo *devicerepo.DeviceRepo, searchUrl string, filterDevices
 		dtIds = []string{}
 	}
 
-	permsearchDevices := []models.Device{}
-	deviceFilter := Selection{
-		Condition: &ConditionConfig{
-			Feature:   "features.device_type_id",
-			Operation: QueryAnyValueInFeatureOperation,
-			Value:     dtIds,
-		},
+	deviceListOptions := client.DeviceListOptions{
+		DeviceTypeIds:   dtIds,
+		Limit:           9999,
+		Offset:          0,
+		AttributeKeys:   nil,
+		AttributeValues: nil,
 	}
 	if filterDevicesByAttribute != "" {
-		deviceFilter = Selection{
-			And: []Selection{
-				deviceFilter,
-				{
-					Condition: &ConditionConfig{
-						Feature:   "features.attributes.key",
-						Operation: QueryEqualOperation,
-						Value:     AttributeUsedForGenerator,
-					},
-				},
-				{
-					Condition: &ConditionConfig{
-						Feature:   "features.attributes.value",
-						Operation: QueryEqualOperation,
-						Value:     filterDevicesByAttribute,
-					},
-				},
-			},
-		}
+		deviceListOptions.AttributeKeys = append(deviceListOptions.AttributeKeys, AttributeUsedForGenerator)
+		deviceListOptions.AttributeValues = append(deviceListOptions.AttributeValues, filterDevicesByAttribute)
 	}
-	err, _ = PermissionSearch(token, searchUrl, QueryMessage{
-		Resource: "devices",
-		Find: &QueryFind{
-			QueryListCommons: QueryListCommons{
-				Limit:  9999,
-				Offset: 0,
-				Rights: "r",
-				SortBy: "name",
-			},
-			Filter: &deviceFilter,
-		},
-	}, &permsearchDevices)
-
+	devices, err, _ = repo.ListDevices(token, deviceListOptions)
 	if err != nil {
 		return devices, deviceTypes, err
 	}
@@ -121,7 +75,7 @@ func GetDeviceInfos(repo *devicerepo.DeviceRepo, searchUrl string, filterDevices
 	expectedOwnerId := expectedOwnerJwt.GetUserId()
 
 	log.Println("filter devices with different owner as", expectedOwnerId)
-	devices = util.ListFilter(permsearchDevices, func(d models.Device) bool {
+	devices = util.ListFilter(devices, func(d models.Device) bool {
 		keep := d.OwnerId == expectedOwnerId
 		if !keep {
 			log.Println("ignore", d.Id, d.LocalId, d.Name, "because", d.OwnerId, "!=", expectedOwnerId)
@@ -140,13 +94,8 @@ func GetDeviceInfos(repo *devicerepo.DeviceRepo, searchUrl string, filterDevices
 	for _, d := range devices {
 		usedDeviceTypeIds[d.DeviceTypeId] = true
 	}
-
-	for dtId, _ := range usedDeviceTypeIds {
-		dt, err := repo.GetDeviceType(dtId)
-		if err != nil {
-			return devices, deviceTypes, err
-		}
-		deviceTypes = append(deviceTypes, dt)
-	}
+	deviceTypes = util.ListFilter(deviceTypes, func(d models.DeviceType) bool {
+		return usedDeviceTypeIds[d.Id]
+	})
 	return devices, deviceTypes, nil
 }

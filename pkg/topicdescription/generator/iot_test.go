@@ -20,21 +20,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/auth"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/integrationtests/docker"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/models/go/models"
 	"io"
-	"log"
 	"net/http"
-	"net/url"
 	"reflect"
 	"sort"
 	"sync"
 	"testing"
-	"time"
 )
 
 func TestGetDeviceInfos(t *testing.T) {
@@ -49,7 +45,7 @@ func TestGetDeviceInfos(t *testing.T) {
 		return
 	}
 
-	managerUrl, repoUrl, searchUrl, err := docker.DeviceManagerWithDependencies(ctx, wg)
+	managerUrl, repoUrl, _, err := docker.DeviceManagerWithDependencies(ctx, wg)
 	if err != nil {
 		t.Error(err)
 		return
@@ -63,12 +59,6 @@ func TestGetDeviceInfos(t *testing.T) {
 		Password:         "testpw",
 	}}
 
-	token, err := a.EnsureAccess()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
 	repo, err := devicerepo.New(devicerepo.RepoConfig{
 		DeviceRepositoryUrl: repoUrl,
 		CacheDuration:       "10s",
@@ -79,31 +69,9 @@ func TestGetDeviceInfos(t *testing.T) {
 		return
 	}
 
-	t.Run("create test iot", testGetDeviceInfos_createTestIot(a, managerUrl, searchUrl))
+	t.Run("create test iot", testGetDeviceInfos_createTestIot(a, managerUrl))
 
-	t.Run("check perm-search ready", func(t *testing.T) {
-		temp := []map[string]interface{}{}
-		err, _ = PermissionSearch(token, searchUrl, QueryMessage{
-			Resource: "device-types",
-			Find: &QueryFind{
-				QueryListCommons: QueryListCommons{
-					Limit:  9999,
-					Offset: 0,
-					Rights: "r",
-					SortBy: "name",
-				},
-				Search: "",
-			},
-		}, &temp)
-		if err != nil {
-			t.Error(err)
-		}
-		if len(temp) != 4 {
-			t.Error(len(temp), temp)
-		}
-	})
-
-	t.Run("call without filter", testGetDeviceInfos_check(repo, searchUrl, "", []string{
+	t.Run("call without filter", testGetDeviceInfos_check(repo, "", []string{
 		"urn:infai:ses:device:found_and_used_with_attr_foo",
 		"urn:infai:ses:device:found_and_used_with_attr_bar",
 		"urn:infai:ses:device:found_and_used_without_attr",
@@ -111,22 +79,22 @@ func TestGetDeviceInfos(t *testing.T) {
 		"urn:infai:ses:device-type:found_and_used",
 	}))
 
-	t.Run("call without filter", testGetDeviceInfos_check(repo, searchUrl, "foo", []string{
+	t.Run("call without filter", testGetDeviceInfos_check(repo, "foo", []string{
 		"urn:infai:ses:device:found_and_used_with_attr_foo",
 	}, []string{
 		"urn:infai:ses:device-type:found_and_used",
 	}))
 
-	t.Run("call without filter", testGetDeviceInfos_check(repo, searchUrl, "bar", []string{
+	t.Run("call without filter", testGetDeviceInfos_check(repo, "bar", []string{
 		"urn:infai:ses:device:found_and_used_with_attr_bar",
 	}, []string{
 		"urn:infai:ses:device-type:found_and_used",
 	}))
 }
 
-func testGetDeviceInfos_check(deviceRepo *devicerepo.DeviceRepo, searchUrl string, withAttrFilter string, expectedDeviceIds []string, expectedDeviceTypeIds []string) func(t *testing.T) {
+func testGetDeviceInfos_check(deviceRepo *devicerepo.DeviceRepo, withAttrFilter string, expectedDeviceIds []string, expectedDeviceTypeIds []string) func(t *testing.T) {
 	return func(t *testing.T) {
-		devices, deviceTypes, err := GetDeviceInfos(deviceRepo, searchUrl, withAttrFilter)
+		devices, deviceTypes, err := GetDeviceInfos(deviceRepo, withAttrFilter)
 		if err != nil {
 			t.Error(err)
 			return
@@ -161,7 +129,7 @@ func testGetDeviceInfos_check(deviceRepo *devicerepo.DeviceRepo, searchUrl strin
 	}
 }
 
-func testGetDeviceInfos_createTestIot(auth *auth.Auth, managerUrl string, searchUrl string) func(t *testing.T) {
+func testGetDeviceInfos_createTestIot(auth *auth.Auth, managerUrl string) func(t *testing.T) {
 	return func(t *testing.T) {
 
 		t.Run("create protocol", testGetDeviceInfos_createTestPorotocol(auth, managerUrl, models.Protocol{
@@ -175,8 +143,6 @@ func testGetDeviceInfos_createTestIot(auth *auth.Auth, managerUrl string, search
 				},
 			},
 		}))
-
-		t.Run("wait for protocol cqrs", waitForCqrs(auth, searchUrl, managerUrl, "protocols", "urn:infai:ses:protocol:p1"))
 
 		t.Run("create device-type found_and_used", testGetDeviceInfos_createTestDeviceType(auth, managerUrl, models.DeviceType{
 			Id:   "urn:infai:ses:device-type:found_and_used",
@@ -246,8 +212,6 @@ func testGetDeviceInfos_createTestIot(auth *auth.Auth, managerUrl string, search
 			}},
 		}))
 
-		t.Run("wait for device-type cqrs", waitForCqrs(auth, searchUrl, managerUrl, "device-types", "urn:infai:ses:device-type:unused"))
-
 		t.Run("create device found_and_used_with_attr_foo", testGetDeviceInfos_createTestDevice(auth, managerUrl, models.Device{
 			Id:           "urn:infai:ses:device:found_and_used_with_attr_foo",
 			Name:         "found_and_used_with_attr_foo",
@@ -302,7 +266,6 @@ func testGetDeviceInfos_createTestIot(auth *auth.Auth, managerUrl string, search
 			DeviceTypeId: "urn:infai:ses:device-type:used",
 		}))
 
-		t.Run("wait for device cqrs", waitForCqrs(auth, searchUrl, managerUrl, "devices", "urn:infai:ses:device:used_without_attr"))
 	}
 }
 
@@ -319,7 +282,7 @@ func testGetDeviceInfos_createTestPorotocol(auth *auth.Auth, managerUrl string, 
 			t.Error(err)
 			return
 		}
-		req, err := http.NewRequest("PUT", managerUrl+"/protocols/"+protocol.Id, requestBody)
+		req, err := http.NewRequest("PUT", managerUrl+"/protocols/"+protocol.Id+"?wait=true", requestBody)
 		if err != nil {
 			t.Error(err)
 			return
@@ -352,7 +315,7 @@ func testGetDeviceInfos_createTestDeviceType(auth *auth.Auth, managerUrl string,
 			t.Error(err)
 			return
 		}
-		req, err := http.NewRequest("PUT", managerUrl+"/device-types/"+dt.Id, requestBody)
+		req, err := http.NewRequest("PUT", managerUrl+"/device-types/"+dt.Id+"?wait=true", requestBody)
 		if err != nil {
 			t.Error(err)
 			return
@@ -385,7 +348,7 @@ func testGetDeviceInfos_createTestDevice(auth *auth.Auth, managerUrl string, dev
 			t.Error(err)
 			return
 		}
-		req, err := http.NewRequest("PUT", managerUrl+"/devices/"+device.Id, requestBody)
+		req, err := http.NewRequest("PUT", managerUrl+"/devices/"+device.Id+"?wait=true", requestBody)
 		if err != nil {
 			t.Error(err)
 			return
@@ -403,80 +366,4 @@ func testGetDeviceInfos_createTestDevice(auth *auth.Auth, managerUrl string, dev
 			return
 		}
 	}
-}
-
-func waitForCqrs(auth *auth.Auth, searchUrl string, managerUrl string, resource string, id string) func(t *testing.T) {
-	return func(t *testing.T) {
-		var err error
-		for i := 0; i < 10; i++ {
-			err = headPermissionSearch(auth, searchUrl, resource, id)
-			if err != nil {
-				time.Sleep(1 * time.Second)
-			} else {
-				break
-			}
-		}
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		for i := 0; i < 10; i++ {
-			err = headDeviceManager(auth, managerUrl, resource, id)
-			if err != nil {
-				time.Sleep(1 * time.Second)
-			} else {
-				break
-			}
-		}
-		if err != nil {
-			t.Error(err)
-			return
-		}
-	}
-}
-
-func headPermissionSearch(auth *auth.Auth, searchUrl string, resource string, id string) error {
-	endpoint := searchUrl + "/v3/resources/" + resource + "/" + url.PathEscape(id)
-	log.Println("HEAD", endpoint)
-	token, err := auth.EnsureAccess()
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequest("HEAD", endpoint, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", token)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return errors.New(resp.Status)
-	}
-	return nil
-}
-
-func headDeviceManager(auth *auth.Auth, managerUrl string, resource string, id string) error {
-	endpoint := managerUrl + "/" + resource + "/" + url.PathEscape(id)
-	log.Println("GET", endpoint)
-	token, err := auth.EnsureAccess()
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequest("GET", endpoint, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", token)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return errors.New(resp.Status)
-	}
-	return nil
 }

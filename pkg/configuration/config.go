@@ -54,7 +54,6 @@ type Config struct {
 	GeneratorAuthUsername     string `json:"generator_auth_username"`
 	GeneratorAuthPassword     string `json:"generator_auth_password"`
 
-	GeneratorPermissionSearchUrl      string `json:"generator_permission_search_url"`
 	GeneratorDeviceRepositoryUrl      string `json:"generator_device_repository_url"`
 	GeneratorFilterDevicesByAttribute string `json:"generator_filter_devices_by_attribute"`
 
