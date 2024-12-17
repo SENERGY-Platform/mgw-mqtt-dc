@@ -234,7 +234,8 @@ func (this *DeviceRepo) GetService(deviceTypeId string, localServiceId string) (
 }
 
 func (this *DeviceRepo) ListDeviceTypes(token string, listOptions model.DeviceTypeListOptions) (result []models.DeviceType, err error, errCode int) {
-	return this.client.ListDeviceTypesV3(token, listOptions)
+	result, _, err, errCode = this.client.ListDeviceTypesV3(token, listOptions)
+	return
 }
 
 func (this *DeviceRepo) ListDevices(token string, options model.DeviceListOptions) (result []models.Device, err error, errCode int) {
