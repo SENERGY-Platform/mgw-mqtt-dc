@@ -43,8 +43,10 @@ func New(config RepoConfig, auth *auth.Auth) (result *DeviceRepo, err error) {
 		auth:            auth,
 		config:          config,
 		cacheExpiration: cacheDuration,
-		client:          client.NewClient(config.DeviceRepositoryUrl),
 	}
+	result.client = client.NewClient(config.DeviceRepositoryUrl, func() (token string, err error) {
+		return result.GetToken()
+	})
 	cacheConf := cache.Config{}
 	if config.FallbackFile != "" && config.FallbackFile != "-" {
 		cacheConf.FallbackProvider = fallback.NewProvider(config.FallbackFile)
