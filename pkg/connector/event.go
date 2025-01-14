@@ -29,6 +29,15 @@ func (this *Connector) EventHandler(topic string, retained bool, payload []byte)
 	if this.config.Debug {
 		log.Println("DEBUG: receive event", topic, string(payload))
 	}
+	if desc.HasTransformations() {
+		var err error
+		payload, err = this.handleTransformations(desc, TransformerJsonUnwrapOutput, payload)
+		if err != nil {
+			log.Println("ERROR: unable to transform event", topic, err)
+			this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform event: "+err.Error())
+			return
+		}
+	}
 	go func() {
 		err := this.mgwClient.SendEvent(desc.GetLocalDeviceId(), desc.GetLocalServiceId(), payload)
 		if err != nil {

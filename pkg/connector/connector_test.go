@@ -112,6 +112,14 @@ func (this MockDesc) GetLocalServiceId() string {
 	return "slid"
 }
 
+func (this MockDesc) HasTransformations() bool {
+	return false
+}
+
+func (this MockDesc) GetTransformations(kind string) (result []string) {
+	return nil
+}
+
 func newMgwMock(ctx context.Context, config configuration.Config, refreshNotifier func()) (*MgwMock, error) {
 	return &MgwMock{config: config}, nil
 }

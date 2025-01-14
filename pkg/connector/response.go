@@ -27,10 +27,22 @@ func (this *Connector) ResponseHandler(topic string, retained bool, payload []by
 		if !isRegistered {
 			return
 		}
+
 		deviceId := desc.GetLocalDeviceId()
 		serviceId := desc.GetLocalServiceId()
 		cmdId := getCommandId(deviceId, serviceId)
 		correlationId, correlationExists := this.popCorrelationId(cmdId)
+
+		if desc.HasTransformations() {
+			var err error
+			payload, err = this.handleTransformations(desc, TransformerJsonUnwrapOutput, payload)
+			if err != nil {
+				log.Println("ERROR: transform response", deviceId, serviceId, err)
+				this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform response: "+err.Error())
+				return
+			}
+		}
+
 		if !correlationExists {
 			if this.config.Debug {
 				log.Println("DEBUG: no correlation id stored for response", topic, cmdId)

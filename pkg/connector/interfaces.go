@@ -52,6 +52,8 @@ type TopicDescription interface {
 	GetCmdTopic() string
 	GetResponseTopic() string
 	GetLocalServiceId() string
+	HasTransformations() bool
+	GetTransformations(kind string) (result []string)
 }
 
 type DeviceDescription interface {

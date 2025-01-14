@@ -16,14 +16,22 @@
 
 package mocks
 
+import "strings"
+
 type TopicDesc struct {
-	DeviceName string
-	DeviceType string
-	DeviceId   string
-	ServiceId  string
-	EventTopic string
-	CmdTopic   string
-	RespTopic  string
+	DeviceName      string
+	DeviceType      string
+	DeviceId        string
+	ServiceId       string
+	EventTopic      string
+	CmdTopic        string
+	RespTopic       string
+	Transformations []Transformation
+}
+
+type Transformation struct {
+	Path           string
+	Transformation string
 }
 
 func (this TopicDesc) GetDeviceName() string {
@@ -52,4 +60,20 @@ func (this TopicDesc) GetResponseTopic() string {
 
 func (this TopicDesc) GetLocalServiceId() string {
 	return this.ServiceId
+}
+
+func (this TopicDesc) HasTransformations() bool {
+	return len(this.Transformations) > 0
+}
+
+func (this TopicDesc) GetTransformations(kind string) (result []string) {
+	for _, trans := range this.Transformations {
+		if trans.Transformation == kind {
+			paths := strings.Split(trans.Path, ",")
+			for _, path := range paths {
+				result = append(result, strings.TrimSpace(path))
+			}
+		}
+	}
+	return result
 }

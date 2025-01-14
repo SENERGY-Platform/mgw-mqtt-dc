@@ -106,6 +106,28 @@ func TestStore(t *testing.T) {
 				ServiceLocalId: "s2",
 				DeviceName:     "delete",
 			},
+			{
+				CmdTopic:       "withTransformer/withCmdTransformer/cmd",
+				RespTopic:      "withTransformer/withCmdTransformer/resp",
+				DeviceTypeId:   "dt1",
+				DeviceLocalId:  "withTransformer",
+				ServiceLocalId: "withTransformer",
+				DeviceName:     "withTransformer",
+				Transformations: []model.Transformation{
+					{
+						Path:           "",
+						Transformation: model.TransformerJsonUnwrapInput,
+					},
+					{
+						Path:           "foo.bar2",
+						Transformation: model.TransformerJsonUnwrapOutput,
+					},
+					{
+						Path:           "foo.batz2",
+						Transformation: model.TransformerJsonUnwrapOutput,
+					},
+				},
+			},
 		}, dir)
 		if err != nil {
 			t.Error(err)
@@ -123,6 +145,7 @@ func TestStore(t *testing.T) {
 			"generated_foobar:with%20space.json",
 			"generated_foobar:with%2Fslash.json",
 			"generated_foobar:with-dash.json",
+			"generated_withTransformer.json",
 			"readme.md",
 		}
 		files := []string{}
@@ -170,6 +193,53 @@ func TestStore(t *testing.T) {
 				DeviceLocalId:  "foobar:d2",
 				ServiceLocalId: "s2",
 				DeviceName:     "update",
+			},
+		}
+		util.ListSort(expected, func(a model.TopicDescription, b model.TopicDescription) bool {
+			return a.GetTopic() < b.GetTopic()
+		})
+		util.ListSort(d2, func(a model.TopicDescription, b model.TopicDescription) bool {
+			return a.GetTopic() < b.GetTopic()
+		})
+		if !reflect.DeepEqual(expected, d2) {
+			t.Error("\n", expected, "\n", d2)
+		}
+	})
+	t.Run("check initial withTransformer", func(t *testing.T) {
+		f, err := os.Open(filepath.Join(dir, "generated_withTransformer.json"))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer f.Close()
+		d2 := []model.TopicDescription{}
+		err = json.NewDecoder(f).Decode(&d2)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		expected := []model.TopicDescription{
+			{
+				CmdTopic:       "withTransformer/withCmdTransformer/cmd",
+				RespTopic:      "withTransformer/withCmdTransformer/resp",
+				DeviceTypeId:   "dt1",
+				DeviceLocalId:  "withTransformer",
+				ServiceLocalId: "withTransformer",
+				DeviceName:     "withTransformer",
+				Transformations: []model.Transformation{
+					{
+						Path:           "",
+						Transformation: model.TransformerJsonUnwrapInput,
+					},
+					{
+						Path:           "foo.bar2",
+						Transformation: model.TransformerJsonUnwrapOutput,
+					},
+					{
+						Path:           "foo.batz2",
+						Transformation: model.TransformerJsonUnwrapOutput,
+					},
+				},
 			},
 		}
 		util.ListSort(expected, func(a model.TopicDescription, b model.TopicDescription) bool {

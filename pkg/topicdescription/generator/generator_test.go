@@ -62,6 +62,22 @@ func TestGenerateTopicDescriptionsWithTruncate(t *testing.T) {
 			Id: "dt1",
 			Services: []models.Service{
 				{
+					LocalId: "withEventTransformer",
+					Attributes: []models.Attribute{
+						{Key: EventAttribute, Value: "{{.Device}}/withEventTransformer"},
+						{Key: model.TransformerJsonUnwrapOutput, Value: "foo.bar,foo.batz"},
+					},
+				},
+				{
+					LocalId: "withCmdTransformer",
+					Attributes: []models.Attribute{
+						{Key: CommandAttribute, Value: "{{.Device}}/withCmdTransformer/cmd"},
+						{Key: ResponseAttribute, Value: "{{.Device}}/withCmdTransformer/resp"},
+						{Key: model.TransformerJsonUnwrapOutput, Value: "foo.bar2,foo.batz2"},
+						{Key: model.TransformerJsonUnwrapInput, Value: ""},
+					},
+				},
+				{
 					LocalId: "s1",
 					Attributes: []models.Attribute{
 						{Key: EventAttribute, Value: "{{.Device}}/e1"},
@@ -112,6 +128,84 @@ func TestGenerateTopicDescriptionsWithTruncate(t *testing.T) {
 	}
 
 	expected := []model.TopicDescription{
+		{
+			EventTopic:     "d1/withEventTransformer",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  prefix + "d1",
+			ServiceLocalId: "withEventTransformer",
+			DeviceName:     "device 1",
+			Transformations: []model.Transformation{
+				{
+					Path:           "foo.bar",
+					Transformation: model.TransformerJsonUnwrapOutput,
+				},
+				{
+					Path:           "foo.batz",
+					Transformation: model.TransformerJsonUnwrapOutput,
+				},
+			},
+		},
+		{
+			CmdTopic:       "d1/withCmdTransformer/cmd",
+			RespTopic:      "d1/withCmdTransformer/resp",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  prefix + "d1",
+			ServiceLocalId: "withCmdTransformer",
+			DeviceName:     "device 1",
+			Transformations: []model.Transformation{
+				{
+					Path:           "",
+					Transformation: model.TransformerJsonUnwrapInput,
+				},
+				{
+					Path:           "foo.bar2",
+					Transformation: model.TransformerJsonUnwrapOutput,
+				},
+				{
+					Path:           "foo.batz2",
+					Transformation: model.TransformerJsonUnwrapOutput,
+				},
+			},
+		},
+		{
+			EventTopic:     "d2/withEventTransformer",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  prefix + "d2",
+			ServiceLocalId: "withEventTransformer",
+			DeviceName:     "device 2",
+			Transformations: []model.Transformation{
+				{
+					Path:           "foo.bar",
+					Transformation: model.TransformerJsonUnwrapOutput,
+				},
+				{
+					Path:           "foo.batz",
+					Transformation: model.TransformerJsonUnwrapOutput,
+				},
+			},
+		},
+		{
+			CmdTopic:       "d2/withCmdTransformer/cmd",
+			RespTopic:      "d2/withCmdTransformer/resp",
+			DeviceTypeId:   "dt1",
+			DeviceLocalId:  prefix + "d2",
+			ServiceLocalId: "withCmdTransformer",
+			DeviceName:     "device 2",
+			Transformations: []model.Transformation{
+				{
+					Path:           "",
+					Transformation: model.TransformerJsonUnwrapInput,
+				},
+				{
+					Path:           "foo.bar2",
+					Transformation: model.TransformerJsonUnwrapOutput,
+				},
+				{
+					Path:           "foo.batz2",
+					Transformation: model.TransformerJsonUnwrapOutput,
+				},
+			},
+		},
 		{
 			EventTopic:     "d1/e1",
 			DeviceTypeId:   "dt1",
@@ -202,6 +296,9 @@ func TestGenerateTopicDescriptionsWithTruncate(t *testing.T) {
 	})
 
 	actual := GenerateTopicDescriptions(devices, deviceTypes, prefix)
+	util.ListSort(actual, func(a model.TopicDescription, b model.TopicDescription) bool {
+		return a.GetTopic() < b.GetTopic()
+	})
 
 	if !reflect.DeepEqual(expected, actual) {
 		e, _ := json.Marshal(expected)

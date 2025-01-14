@@ -22,6 +22,7 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/models/go/models"
 	"log"
+	"slices"
 	"strings"
 	"text/template"
 )
@@ -81,6 +82,21 @@ func GenerateCommandServiceTopicDescriptions(device models.Device, service model
 		ServiceLocalId: service.LocalId,
 		DeviceName:     device.Name,
 	}
+	for _, attr := range service.Attributes {
+		if attr.Key == model.TransformerJsonUnwrapInput || attr.Key == model.TransformerJsonUnwrapOutput {
+			paths := strings.Split(attr.Value, ",")
+			for _, path := range paths {
+				path = strings.TrimSpace(path)
+				temp.Transformations = append(temp.Transformations, model.Transformation{
+					Path:           path,
+					Transformation: attr.Key,
+				})
+			}
+		}
+	}
+	slices.SortFunc(temp.Transformations, func(a, b model.Transformation) int {
+		return strings.Compare(a.Path, b.Path)
+	})
 	respTopic, found := GetAttributeValue(service.Attributes, ResponseAttribute)
 	if found {
 		temp.RespTopic, err = GenerateTopic(respTopic, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
@@ -102,13 +118,29 @@ func GenerateEventServiceTopicDescriptions(device models.Device, service models.
 		log.Println("WARNING: invalid event topic template", eventTopic, "in", device.Name, device.Id, device.LocalId, service.Name, service.Id, service.LocalId)
 		return result
 	}
-	return []model.TopicDescription{{
+	temp := model.TopicDescription{
 		EventTopic:     eventTopic,
 		DeviceTypeId:   device.DeviceTypeId,
 		DeviceLocalId:  device.LocalId,
 		ServiceLocalId: service.LocalId,
 		DeviceName:     device.Name,
-	}}
+	}
+	for _, attr := range service.Attributes {
+		if attr.Key == model.TransformerJsonUnwrapInput || attr.Key == model.TransformerJsonUnwrapOutput {
+			paths := strings.Split(attr.Value, ",")
+			for _, path := range paths {
+				path = strings.TrimSpace(path)
+				temp.Transformations = append(temp.Transformations, model.Transformation{
+					Path:           path,
+					Transformation: attr.Key,
+				})
+			}
+		}
+	}
+	slices.SortFunc(temp.Transformations, func(a, b model.Transformation) int {
+		return strings.Compare(a.Path, b.Path)
+	})
+	return []model.TopicDescription{temp}
 }
 
 func GetAttributeValue(attributes []models.Attribute, key string) (result string, found bool) {

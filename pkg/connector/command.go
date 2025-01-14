@@ -32,12 +32,24 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 			return
 		}
 
+		payload := []byte(command.Data)
+
+		if desc.HasTransformations() {
+			var err error
+			payload, err = this.handleTransformations(desc, TransformerJsonUnwrapInput, payload)
+			if err != nil {
+				log.Println("ERROR: transform command", deviceId, serviceId, err)
+				this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform command: "+err.Error())
+				return
+			}
+		}
+
 		expectsDeviceResponse := desc.GetResponseTopic() != ""
 		if expectsDeviceResponse {
 			this.storeCorrelationId(cmdId, command.CommandId)
 		}
 
-		err := this.commandMqttClient.Publish(desc.GetCmdTopic(), 2, false, []byte(command.Data))
+		err := this.commandMqttClient.Publish(desc.GetCmdTopic(), 2, false, payload)
 		if err != nil {
 			log.Println("ERROR: unable to send command to mqtt", err)
 			this.mgwClient.SendCommandError(command.CommandId, "unable to send command to mqtt: "+err.Error())

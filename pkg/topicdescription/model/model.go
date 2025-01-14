@@ -16,14 +16,23 @@
 
 package model
 
+const TransformerJsonUnwrapInput = "json-unwrap-input"
+const TransformerJsonUnwrapOutput = "json-unwrap-output"
+
 type TopicDescription struct {
-	CmdTopic       string `json:"cmd_topic" yaml:"cmd_topic"`
-	EventTopic     string `json:"event_topic" yaml:"event_topic"`
-	RespTopic      string `json:"resp_topic" yaml:"resp_topic"`
-	DeviceTypeId   string `json:"device_type_id" yaml:"device_type_id"`
-	DeviceLocalId  string `json:"device_local_id" yaml:"device_local_id"`
-	ServiceLocalId string `json:"service_local_id" yaml:"service_local_id"`
-	DeviceName     string `json:"device_name" yaml:"device_name"`
+	CmdTopic        string           `json:"cmd_topic" yaml:"cmd_topic"`
+	EventTopic      string           `json:"event_topic" yaml:"event_topic"`
+	RespTopic       string           `json:"resp_topic" yaml:"resp_topic"`
+	DeviceTypeId    string           `json:"device_type_id" yaml:"device_type_id"`
+	DeviceLocalId   string           `json:"device_local_id" yaml:"device_local_id"`
+	ServiceLocalId  string           `json:"service_local_id" yaml:"service_local_id"`
+	Transformations []Transformation `json:"transformations" yaml:"transformations"`
+	DeviceName      string           `json:"device_name" yaml:"device_name"`
+}
+
+type Transformation struct {
+	Path           string `json:"path" yaml:"path"`
+	Transformation string `json:"transformation" yaml:"transformation"`
 }
 
 func (this TopicDescription) GetTopic() string {
@@ -59,4 +68,17 @@ func (this TopicDescription) GetLocalDeviceId() string {
 
 func (this TopicDescription) GetLocalServiceId() string {
 	return this.ServiceLocalId
+}
+
+func (this TopicDescription) HasTransformations() bool {
+	return len(this.Transformations) > 0
+}
+
+func (this TopicDescription) GetTransformations(kind string) (result []string) {
+	for _, trans := range this.Transformations {
+		if trans.Transformation == kind {
+			result = append(result, trans.Path)
+		}
+	}
+	return result
 }
