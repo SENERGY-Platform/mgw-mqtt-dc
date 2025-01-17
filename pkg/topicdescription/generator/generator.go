@@ -64,6 +64,8 @@ func GenerateServiceTopicDescriptions(device models.Device, service models.Servi
 	return result
 }
 
+const DisplayNameAttributeName = "shared/nickname"
+
 func GenerateCommandServiceTopicDescriptions(device models.Device, service models.Service, truncateDevicePrefix string) (result []model.TopicDescription) {
 	cmdTopicTempl, found := GetAttributeValue(service.Attributes, CommandAttribute)
 	if !found {
@@ -81,6 +83,17 @@ func GenerateCommandServiceTopicDescriptions(device models.Device, service model
 		DeviceLocalId:  device.LocalId,
 		ServiceLocalId: service.LocalId,
 		DeviceName:     device.Name,
+	}
+	if temp.DeviceName == "" {
+		for _, attr := range service.Attributes {
+			if attr.Key == DisplayNameAttributeName {
+				temp.DeviceName = attr.Value
+				break
+			}
+		}
+	}
+	if temp.DeviceName == "" {
+		temp.DeviceName = "unknown name"
 	}
 	for _, attr := range service.Attributes {
 		if attr.Key == model.TransformerJsonUnwrapInput || attr.Key == model.TransformerJsonUnwrapOutput {
@@ -124,6 +137,17 @@ func GenerateEventServiceTopicDescriptions(device models.Device, service models.
 		DeviceLocalId:  device.LocalId,
 		ServiceLocalId: service.LocalId,
 		DeviceName:     device.Name,
+	}
+	if temp.DeviceName == "" {
+		for _, attr := range service.Attributes {
+			if attr.Key == DisplayNameAttributeName {
+				temp.DeviceName = attr.Value
+				break
+			}
+		}
+	}
+	if temp.DeviceName == "" {
+		temp.DeviceName = "unknown name"
 	}
 	for _, attr := range service.Attributes {
 		if attr.Key == model.TransformerJsonUnwrapInput || attr.Key == model.TransformerJsonUnwrapOutput {
