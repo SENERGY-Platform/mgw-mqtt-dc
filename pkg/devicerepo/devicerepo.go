@@ -77,11 +77,13 @@ func (this *DeviceRepo) GetJson(token string, endpoint string, result interface{
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", token)
-	client := &http.Client{
+	if token != "" {
+		req.Header.Set("Authorization", token)
+	}
+	c := &http.Client{
 		Timeout: 10 * time.Second,
 	}
-	resp, err := client.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
 		return err
 	}
@@ -107,6 +109,9 @@ func (this *DeviceRepo) GetJson(token string, endpoint string, result interface{
 func (this *DeviceRepo) GetToken() (string, error) {
 	if this.auth == nil {
 		this.auth = &auth.Auth{}
+	}
+	if !this.auth.Credentials.AuthEnabled() {
+		return "", nil
 	}
 	return this.auth.EnsureAccess()
 }

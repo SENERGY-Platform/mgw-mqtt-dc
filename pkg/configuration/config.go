@@ -87,6 +87,10 @@ func Load(location string) (config Config, err error) {
 	return config, nil
 }
 
+func (this Config) GeneratorAuthEnabled() bool {
+	return this.GeneratorAuthEndpoint != "" && this.GeneratorAuthEndpoint != "-"
+}
+
 var camel = regexp.MustCompile("(^[^A-Z]*|[A-Z]*)([A-Z][^A-Z]+|$)")
 
 func fieldNameToEnvName(s string) string {

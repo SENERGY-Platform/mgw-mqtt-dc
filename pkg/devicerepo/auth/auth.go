@@ -48,7 +48,14 @@ type Credentials struct {
 	Password         string
 }
 
+func (this Credentials) AuthEnabled() bool {
+	return this.AuthEndpoint != "" && this.AuthEndpoint != "-"
+}
+
 func (this *Auth) EnsureAccess() (token string, err error) {
+	if !this.Credentials.AuthEnabled() {
+		return "", nil
+	}
 	duration := time.Now().Sub(this.CurrentTokenInfo.RequestTime).Seconds()
 
 	if this.CurrentTokenInfo.AccessToken != "" && this.CurrentTokenInfo.ExpiresIn-5 > duration {
