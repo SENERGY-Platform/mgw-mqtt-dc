@@ -48,6 +48,8 @@ type Config struct {
 
 	GeneratorUse bool `json:"generator_use"`
 
+	GeneratorMgwCertManagerUrl string `json:"generator_mgw_cert_manager_url"` //alternative to GeneratorAuthEndpoint
+
 	GeneratorAuthEndpoint     string `json:"generator_auth_endpoint"`
 	GeneratorAuthClientId     string `json:"generator_auth_client_id"`
 	GeneratorAuthClientSecret string `json:"generator_auth_client_secret"`

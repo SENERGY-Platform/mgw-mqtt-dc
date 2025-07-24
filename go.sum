@@ -22,6 +22,8 @@ github.com/SENERGY-Platform/device-repository v0.2.5 h1:XqWxlcTzcmXvtk0waRcaYx6a
 github.com/SENERGY-Platform/device-repository v0.2.5/go.mod h1:EBo1p5myk1NvJyqrPU/RgXDUdRcXOUSf2o8Vcz8XUtU=
 github.com/SENERGY-Platform/marshaller v0.0.20 h1:OseksGNycDcalhODJp4R189Vk5OvxVdm58l6YEC0RGQ=
 github.com/SENERGY-Platform/marshaller v0.0.20/go.mod h1:WYA+xdfYmOkPMeLkgdV3A82wDZtc6Kxy4RSDU+ZdNdE=
+github.com/SENERGY-Platform/mgw-cloud-proxy/cert-manager/lib v0.0.4 h1:+0g0T8Z2nJfmsVzqoKX4UyS2MiEAZQUbefbUGBDbsGc=
+github.com/SENERGY-Platform/mgw-cloud-proxy/cert-manager/lib v0.0.4/go.mod h1:UPtGbiAOtGd78qgM0HZrtiKxcn3HebSV5QAZvHme998=
 github.com/SENERGY-Platform/models/go v0.0.0-20241007061544-de7132ae94e4 h1:zS65f1cmjAoBQUA432nmJl2TXAwqqqJMz7sp2DHLAGc=
 github.com/SENERGY-Platform/models/go v0.0.0-20241007061544-de7132ae94e4/go.mod h1:bCREPNRN4P8oxLgpC3/ZKK4jXSy4MSPXoiomhohE+aw=
 github.com/SENERGY-Platform/permissions-v2 v0.0.27 h1:4Sf5zNW0KMrSSJrv90MmyKD5RMnS8CT26yE7W9Za/x0=

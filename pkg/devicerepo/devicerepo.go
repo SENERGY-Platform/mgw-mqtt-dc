@@ -110,10 +110,14 @@ func (this *DeviceRepo) GetToken() (string, error) {
 	if this.auth == nil {
 		this.auth = &auth.Auth{}
 	}
-	if !this.auth.Credentials.AuthEnabled() {
-		return "", nil
-	}
 	return this.auth.EnsureAccess()
+}
+
+func (this *DeviceRepo) GetUserId(token string) (userId string, err error) {
+	if this.auth == nil {
+		this.auth = &auth.Auth{}
+	}
+	return this.auth.GetUserId(token)
 }
 
 func (this *DeviceRepo) GetCharacteristic(id string) (result models.Characteristic, err error) {

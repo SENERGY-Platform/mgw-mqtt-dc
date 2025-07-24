@@ -19,6 +19,7 @@ package auth
 import (
 	"encoding/json"
 	"errors"
+	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"io"
 	"log"
 	"net/http"
@@ -29,6 +30,7 @@ import (
 type Auth struct {
 	Credentials      Credentials
 	CurrentTokenInfo TokenInfo
+	mgwIdpClient     *MgwIdpClient
 }
 
 type TokenInfo struct {
@@ -41,11 +43,12 @@ type TokenInfo struct {
 }
 
 type Credentials struct {
-	AuthEndpoint     string
-	AuthClientId     string
-	AuthClientSecret string
-	Username         string
-	Password         string
+	AuthEndpoint      string
+	AuthClientId      string
+	AuthClientSecret  string
+	Username          string
+	Password          string
+	MgwCertManagerUrl string
 }
 
 func (this Credentials) AuthEnabled() bool {
@@ -82,6 +85,24 @@ func (this *Auth) EnsureAccess() (token string, err error) {
 	}
 	token = "Bearer " + this.CurrentTokenInfo.AccessToken
 	return
+}
+
+func (this *Auth) GetUserId(token string) (userId string, err error) {
+	if token == "" {
+		if this.mgwIdpClient == nil {
+			this.mgwIdpClient, err = NewMgwIdpClient(this.Credentials.MgwCertManagerUrl)
+			if err != nil {
+				return "", err
+			}
+		}
+		return this.mgwIdpClient.GetUserId()
+	} else {
+		parsedToken, err := jwt.Parse(token)
+		if err != nil {
+			return "", err
+		}
+		return parsedToken.GetUserId(), nil
+	}
 }
 
 func getOpenidToken(token *TokenInfo, cred Credentials) (err error) {

@@ -21,7 +21,6 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/models/go/models"
-	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"log"
 )
 
@@ -68,11 +67,10 @@ func GetDeviceInfos(repo *devicerepo.DeviceRepo, filterDevicesByAttribute string
 		return devices, deviceTypes, err
 	}
 
-	expectedOwnerJwt, err := jwt.Parse(token)
+	expectedOwnerId, err := repo.GetUserId(token)
 	if err != nil {
 		return devices, deviceTypes, err
 	}
-	expectedOwnerId := expectedOwnerJwt.GetUserId()
 
 	log.Println("filter devices with different owner as", expectedOwnerId)
 	devices = util.ListFilter(devices, func(d models.Device) bool {
