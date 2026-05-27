@@ -20,14 +20,15 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"gopkg.in/yaml.v2"
-	"log"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 func Load(config configuration.Config, deviceRepo *devicerepo.DeviceRepo) (topicDescriptions []model.TopicDescription, err error) {
@@ -60,14 +61,14 @@ func LoadDir(dir string) (topicDescriptions []model.TopicDescription, err error)
 			case ".json":
 				temp, err := LoadJson(p)
 				if err != nil {
-					log.Println("WARNING: unable to load", p, err)
+					slog.Warn("unable to load", "file", p, "error", err)
 					continue
 				}
 				topicDescriptions = append(topicDescriptions, temp...)
 			case ".csv":
 				temp, err := LoadCsv(p)
 				if err != nil {
-					log.Println("WARNING: unable to load", p, err)
+					slog.Warn("unable to load", "file", p, "error", err)
 					continue
 				}
 				topicDescriptions = append(topicDescriptions, temp...)
@@ -76,12 +77,12 @@ func LoadDir(dir string) (topicDescriptions []model.TopicDescription, err error)
 			case ".yaml":
 				temp, err := LoadYaml(p)
 				if err != nil {
-					log.Println("WARNING: unable to load", p, err)
+					slog.Warn("unable to load", "file", p, "error", err)
 					continue
 				}
 				topicDescriptions = append(topicDescriptions, temp...)
 			default:
-				log.Println("WARNING: unknown file type in topic-descriptions directory", ext, file.Name())
+				slog.Warn("unknown file type in topic-descriptions directory", "ext", ext, "fileName", file.Name())
 			}
 		}
 	}
@@ -91,12 +92,12 @@ func LoadDir(dir string) (topicDescriptions []model.TopicDescription, err error)
 func LoadJson(location string) (topicDescriptions []model.TopicDescription, err error) {
 	file, err := os.Open(location)
 	if err != nil {
-		log.Println("error on config load:\n", location, "\n", err)
+		slog.Error("error on config load", "location", location, "error", err)
 		return topicDescriptions, err
 	}
 	err = json.NewDecoder(file).Decode(&topicDescriptions)
 	if err != nil {
-		log.Println("error on config load:\n", location, "\n", err)
+		slog.Error("error on config load", "location", location, "error", err)
 		return topicDescriptions, err
 	}
 	return topicDescriptions, nil
@@ -105,12 +106,12 @@ func LoadJson(location string) (topicDescriptions []model.TopicDescription, err 
 func LoadYaml(location string) (topicDescriptions []model.TopicDescription, err error) {
 	file, err := os.Open(location)
 	if err != nil {
-		log.Println("error on config load:\n", location, "\n", err)
+		slog.Error("error on config load", "location", location, "error", err)
 		return topicDescriptions, err
 	}
 	err = yaml.NewDecoder(file).Decode(&topicDescriptions)
 	if err != nil {
-		log.Println("error on config load:\n", location, "\n", err)
+		slog.Error("error on config load", "location", location, "error", err)
 		return topicDescriptions, err
 	}
 	return topicDescriptions, nil
@@ -119,7 +120,7 @@ func LoadYaml(location string) (topicDescriptions []model.TopicDescription, err 
 func LoadCsv(location string) (topicDescriptions []model.TopicDescription, err error) {
 	file, err := os.Open(location)
 	if err != nil {
-		log.Println("error on config load:\n", location, "\n", err)
+		slog.Error("error on config load", "location", location, "error", err)
 		return topicDescriptions, err
 	}
 	reader := csv.NewReader(file)
@@ -128,7 +129,7 @@ func LoadCsv(location string) (topicDescriptions []model.TopicDescription, err e
 	reader.TrimLeadingSpace = true
 	lines, err := reader.ReadAll()
 	if err != nil {
-		log.Println("error on config load:\n", location, "\n", err)
+		slog.Error("error on config load", "location", location, "error", err)
 		return topicDescriptions, err
 	}
 	for _, line := range lines {
@@ -144,7 +145,7 @@ func LoadCsv(location string) (topicDescriptions []model.TopicDescription, err e
 		rows := len(line)
 		if rows != 6 && rows != 7 {
 			err = errors.New("invalid cow count (expect 6 or 7 rows)")
-			log.Println("error on config load:\n", location, "\n", err)
+			slog.Error("error on config load", "location", location, "error", err)
 			return topicDescriptions, err
 		}
 		temp.CmdTopic = strings.TrimSpace(line[0])

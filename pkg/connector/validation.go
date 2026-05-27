@@ -19,15 +19,15 @@ package connector
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
-	"log"
 )
 
 func (this *Connector) validateTopicDescriptions(topics []TopicDescription) error {
 	topics = util.ListFilterDuplicates(topics, func(a TopicDescription, b TopicDescription) bool {
 		duplicate := EqualTopicDesc(a, b)
 		if duplicate {
-			log.Println("WARNING: found duplicate topic description:", descToStr(a))
+			this.config.GetLogger().Warn("found duplicate topic description", "topic", descToStr(a))
 		}
 		return duplicate
 	})
@@ -54,8 +54,7 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 			return errors.New("invalid topic description: expect either event or command topic: " + string(j))
 		}
 		if resp != "" && cmd == "" {
-			j, _ := json.Marshal(map[string]string{"e": event, "c": cmd, "r": resp})
-			log.Println("WARNING: response topic will not be used if command topic is not set", string(j))
+			this.config.GetLogger().Warn("response topic will not be used if command topic is not set", "event_topic", event, "cmd_topic", cmd, "resp_topic", resp)
 		}
 
 		//check for name redefinition
@@ -102,11 +101,11 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 		if resp != "" {
 			respTopicUsed[resp] = true
 			if eventTopicUsed[resp] {
-				log.Println("WARNING: response topic is also used as event topic", resp)
+				this.config.GetLogger().Warn("response topic is also used as event topic", "topic", resp)
 			}
 		}
 		if event != "" && respTopicUsed[event] {
-			log.Println("WARNING: event topic is also used as response topic", event)
+			this.config.GetLogger().Warn("event topic is also used as response topic", "topic", event)
 		}
 	}
 	return nil

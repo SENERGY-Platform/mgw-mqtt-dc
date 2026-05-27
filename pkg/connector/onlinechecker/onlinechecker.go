@@ -18,12 +18,12 @@ package onlinechecker
 
 import (
 	"errors"
+	"fmt"
+	"sync"
+
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/models/go/models"
-	"log"
-	"runtime/debug"
-	"sync"
 )
 
 func New[T TopicDesc](config configuration.Config, devicerepo DeviceRepo) (result *Checker[T], err error) {
@@ -135,22 +135,19 @@ func (this *Checker[T]) CheckAndStoreState(desc T, retained bool, payload []byte
 	}
 	service, err := this.getService(desc)
 	if err != nil {
-		log.Println("ERROR:", err)
-		debug.PrintStack()
+		this.config.GetLogger().Error("unable to get service", "error", err)
 		return "", true
 	}
 
 	msg, err := this.serialize(service, payload)
 	if err != nil {
-		log.Println("ERROR:", err)
-		debug.PrintStack()
+		this.config.GetLogger().Error("unable to serialize", "error", err)
 		return "", true
 	}
 
 	result, err := this.marshaller.Unmarshal(service, this.config.OnlineCheckFunctionId, this.config.OnlineCheckBooleanCharacteristicId, msg)
 	if err != nil {
-		log.Println("ERROR:", err)
-		debug.PrintStack()
+		this.config.GetLogger().Error("unable to unmarshal", "error", err, "service_id", service.Id, "function_id", this.config.OnlineCheckFunctionId, "characteristic_id", this.config.OnlineCheckBooleanCharacteristicId, "payload", fmt.Sprintf("%#v", msg))
 		return "", true
 	}
 

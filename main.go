@@ -19,13 +19,14 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/connector"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/connector"
 )
 
 func main() {
@@ -41,6 +42,7 @@ func main() {
 
 	_, err = connector.New(ctx, config)
 	if err != nil {
+		config.GetLogger().Error("fatal error starting connector", "error", err)
 		log.Fatal(err)
 		return
 	}
@@ -49,7 +51,7 @@ func main() {
 		shutdown := make(chan os.Signal, 1)
 		signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 		sig := <-shutdown
-		log.Println("received shutdown signal", sig)
+		config.GetLogger().Info("received shutdown signal", "signal", sig)
 		cancel()
 	}()
 

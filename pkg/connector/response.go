@@ -18,7 +18,6 @@ package connector
 
 import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
-	"log"
 )
 
 func (this *Connector) ResponseHandler(topic string, retained bool, payload []byte) {
@@ -37,16 +36,14 @@ func (this *Connector) ResponseHandler(topic string, retained bool, payload []by
 			var err error
 			payload, err = this.handleTransformations(desc, TransformerJsonUnwrapOutput, payload)
 			if err != nil {
-				log.Println("ERROR: transform response", deviceId, serviceId, err)
+				this.config.GetLogger().Error("unable to transform response", "deviceId", deviceId, "serviceId", serviceId, "error", err)
 				this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform response: "+err.Error())
 				return
 			}
 		}
 
 		if !correlationExists {
-			if this.config.Debug {
-				log.Println("DEBUG: no correlation id stored for response", topic, cmdId)
-			}
+			this.config.GetLogger().Debug("no correlation id stored for response", "topic", topic, "cmdId", cmdId)
 			return
 		}
 		err := this.mgwClient.Respond(deviceId, serviceId, mgw.Command{
@@ -54,16 +51,14 @@ func (this *Connector) ResponseHandler(topic string, retained bool, payload []by
 			Data:      string(payload),
 		})
 		if err != nil {
-			log.Println("ERROR: unable to send response", err)
+			this.config.GetLogger().Error("unable to send response", "deviceId", deviceId, "serviceId", serviceId, "error", err)
 			this.mgwClient.SendCommandError(correlationId, "unable to send response: "+err.Error())
 		}
 	}()
 }
 
 func (this *Connector) addResponse(topicDesc TopicDescription) (err error) {
-	if this.config.Debug {
-		log.Println("DEBUG: add response listener", topicDesc)
-	}
+	this.config.GetLogger().Debug("add response listener", "topic", topicDesc.GetResponseTopic())
 	responseTopic := topicDesc.GetResponseTopic()
 	err = this.commandMqttClient.Subscribe(responseTopic, 2, this.ResponseHandler)
 	if err != nil {
@@ -74,9 +69,7 @@ func (this *Connector) addResponse(topicDesc TopicDescription) (err error) {
 }
 
 func (this *Connector) updateResponse(topic TopicDescription) error {
-	if this.config.Debug {
-		log.Println("DEBUG: update response listener", topic)
-	}
+	this.config.GetLogger().Debug("update response listener", "topic", topic.GetResponseTopic())
 	err := this.removeResponse(topic.GetResponseTopic())
 	if err != nil {
 		return err
@@ -85,9 +78,7 @@ func (this *Connector) updateResponse(topic TopicDescription) error {
 }
 
 func (this *Connector) removeResponse(topic string) (err error) {
-	if this.config.Debug {
-		log.Println("DEBUG: remove response listener", topic)
-	}
+	this.config.GetLogger().Debug("remove response listener", "topic", topic)
 	desc, exists := this.responseTopicRegister.Get(topic)
 	if !exists {
 		return nil

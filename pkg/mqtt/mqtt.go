@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"log"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -63,12 +64,13 @@ func (this *Mqtt) init(ctx context.Context) error {
 		SetWriteTimeout(2 * time.Second).
 		SetOrderMatters(true).
 		SetConnectionLostHandler(func(_ paho.Client, err error) {
-			log.Println("connection to mqtt broker lost")
+			slog.Error("connection to mqtt broker lost", "error", err)
 		}).
 		SetOnConnectHandler(func(_ paho.Client) {
-			log.Println("connected to mqtt broker")
+			slog.Info("connected to mqtt broker")
 			err := this.loadOldSubscriptions()
 			if err != nil {
+				slog.Error("fatal: unable to load old subscriptions", "error", err)
 				log.Fatal("FATAL: ", err)
 			}
 		}).
@@ -78,7 +80,7 @@ func (this *Mqtt) init(ctx context.Context) error {
 
 	this.mqtt = paho.NewClient(options)
 	if token := this.mqtt.Connect(); token.Wait() && token.Error() != nil {
-		log.Println("Error on MqttStart.Connect(): ", token.Error())
+		slog.Error("unable to connect to mqtt broker", "error", token.Error())
 		return token.Error()
 	}
 

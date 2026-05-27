@@ -20,13 +20,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/SENERGY-Platform/models/go/models"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/SENERGY-Platform/models/go/models"
 )
 
 func createTestMetadata(token string, managerUrl string, characteristics []models.Characteristic, concepts []models.Concept, functions []models.Function, protocols []models.Protocol, dts []models.DeviceType, devices []models.Device) func(t *testing.T) {
@@ -257,7 +258,7 @@ func waitForCqrs(token string, searchUrl string, managerUrl string, resource str
 
 func headPermissionSearch(token string, searchUrl string, resource string, id string) error {
 	endpoint := searchUrl + "/v3/resources/" + resource + "/" + url.PathEscape(id)
-	log.Println("HEAD", endpoint)
+	slog.Debug("HEAD", "endpoint", endpoint)
 	req, err := http.NewRequest("HEAD", endpoint, nil)
 	if err != nil {
 		return err
@@ -276,7 +277,7 @@ func headPermissionSearch(token string, searchUrl string, resource string, id st
 
 func headDeviceManager(token string, managerUrl string, resource string, id string) error {
 	endpoint := managerUrl + "/" + resource + "/" + url.PathEscape(id)
-	log.Println("GET", endpoint)
+	slog.Debug("GET", "endpoint", endpoint)
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		return err

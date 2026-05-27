@@ -18,12 +18,12 @@ package onlinechecker
 
 import (
 	"fmt"
+	"log/slog"
+
 	"github.com/SENERGY-Platform/converter/lib/converter"
 	marshallerconfig "github.com/SENERGY-Platform/marshaller/lib/config"
 	"github.com/SENERGY-Platform/marshaller/lib/marshaller/v2"
 	"github.com/SENERGY-Platform/models/go/models"
-	"log"
-	"runtime/debug"
 )
 
 type Marshaller struct {
@@ -70,11 +70,10 @@ func (this *Marshaller) getPath(functionId string, service models.Service) (stri
 		var err error
 		paths, err = this.marshaller.SortPathsByAspectDistance(this.deviceRepo, service, nil, paths)
 		if err != nil {
-			log.Println("ERROR:", err)
-			debug.PrintStack()
+			slog.Error("unable to sort paths by aspect distance", "error", err)
 			return "", fmt.Errorf("%v", err.Error())
 		}
-		log.Println("WARNING: found multiple paths for function and aspect. only one will be used for Unmarshall")
+		slog.Warn("found multiple paths for function and aspect. only one will be used for Unmarshall", "paths", paths)
 	}
 	if len(paths) == 0 {
 		return "", fmt.Errorf("%v", "no output path found for criteria")

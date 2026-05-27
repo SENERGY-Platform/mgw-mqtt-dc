@@ -17,11 +17,12 @@
 package topicdescription
 
 import (
+	"log/slog"
+
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/generator"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
-	"log"
 )
 
 func LoadWithGenerator(config configuration.Config, repo *devicerepo.DeviceRepo) (topicDescriptions []model.TopicDescription, err error) {
@@ -30,12 +31,12 @@ func LoadWithGenerator(config configuration.Config, repo *devicerepo.DeviceRepo)
 	}()
 	devices, deviceTypes, err := generator.GetDeviceInfos(repo, config.GeneratorFilterDevicesByAttribute)
 	if err != nil {
-		log.Println("WARNING: unable to generate topic descriptions:", err)
+		slog.Warn("unable to generate topic descriptions", "error", err)
 		return nil, err
 	}
 	err = generator.Store(generator.GenerateTopicDescriptions(devices, deviceTypes, config.GeneratorTruncateDevicePrefix), config.GeneratorDeviceDescriptionsDir)
 	if err != nil {
-		log.Println("WARNING: unable to store generated topic descriptions:", err)
+		slog.Warn("unable to generate topic descriptions", "error", err)
 		return nil, err
 	}
 	return

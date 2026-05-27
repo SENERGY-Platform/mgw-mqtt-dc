@@ -18,9 +18,9 @@ package connector
 
 import (
 	"errors"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
-	"log"
 	"net/url"
+
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 )
 
 func (this *Connector) updateTopics() (err error) {
@@ -140,7 +140,7 @@ func (this *Connector) updateTopics() (err error) {
 		}
 		err = this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), string(state))
 		if err != nil {
-			log.Println("ERROR: unable to send device info to mgw", err)
+			this.config.GetLogger().Error("unable to send device info to mgw", "error", err)
 			this.mgwClient.SendClientError("unable to send device info to mgw: " + err.Error())
 			return err
 		}
@@ -181,12 +181,10 @@ func getCommandId(deviceId string, serviceId string) string {
 }
 
 func (this *Connector) addDeviceCommandListener(device DeviceDescription) (err error) {
-	if this.config.Debug {
-		log.Println("DEBUG: add device command listener", device)
-	}
+	this.config.GetLogger().Debug("add device command listener", "deviceName", device.GetDeviceName(), "deviceLocalId", device.GetLocalDeviceId())
 	err = this.mgwClient.ListenToDeviceCommands(device.GetLocalDeviceId(), this.CommandHandler)
 	if err != nil {
-		log.Println("ERROR: unable to subscribe to device commands", err)
+		this.config.GetLogger().Error("unable to subscribe to device commands", "error", err)
 		this.mgwClient.SendClientError("unable to subscribe to device commands: " + err.Error())
 		return err
 	}
@@ -194,18 +192,16 @@ func (this *Connector) addDeviceCommandListener(device DeviceDescription) (err e
 }
 
 func (this *Connector) removeDevice(device DeviceDescription) error {
-	if this.config.Debug {
-		log.Println("DEBUG: remove device", device)
-	}
+	this.config.GetLogger().Debug("try to remove device", "deviceName", device.GetDeviceName(), "deviceLocalId", device.GetLocalDeviceId())
 	id := device.GetLocalDeviceId()
 	if this.config.DeleteDevices {
-		log.Println("delete device", device.GetDeviceName(), id)
+		this.config.GetLogger().Info("delete device from platform", "deviceName", device.GetDeviceName(), "deviceLocalId", id)
 		err := this.mgwClient.RemoveDevice(id)
 		if err != nil {
 			return err
 		}
 	} else {
-		log.Println("topic description has ben removed but device deletion is disabled", device.GetDeviceName(), id)
+		this.config.GetLogger().Info("topic description has ben removed but device deletion is disabled", "deviceName", device.GetDeviceName(), "deviceLocalId", id)
 	}
 	return this.mgwClient.StopListenToDeviceCommands(id)
 }

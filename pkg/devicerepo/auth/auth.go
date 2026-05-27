@@ -19,12 +19,13 @@ package auth
 import (
 	"encoding/json"
 	"errors"
-	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 )
 
 type Auth struct {
@@ -67,20 +68,20 @@ func (this *Auth) EnsureAccess() (token string, err error) {
 	}
 
 	if this.CurrentTokenInfo.RefreshToken != "" && this.CurrentTokenInfo.RefreshExpiresIn-5 > duration {
-		log.Println("refresh token", this.CurrentTokenInfo.RefreshExpiresIn, duration)
+		slog.Debug("refresh token", "refresh_expires_in", this.CurrentTokenInfo.RefreshExpiresIn, "duration", duration)
 		err = refreshOpenidToken(&this.CurrentTokenInfo, this.Credentials)
 		if err != nil {
-			log.Println("WARNING: unable to use refreshtoken", err)
+			slog.Warn("unable to use refreshtoken", "error", err)
 		} else {
 			token = "Bearer " + this.CurrentTokenInfo.AccessToken
 			return
 		}
 	}
 
-	log.Println("get new access token")
+	slog.Debug("get new access token")
 	err = getOpenidToken(&this.CurrentTokenInfo, this.Credentials)
 	if err != nil {
-		log.Println("ERROR: unable to get new access token", err)
+		slog.Error("unable to get new access token", "error", err)
 		this = &Auth{}
 	}
 	token = "Bearer " + this.CurrentTokenInfo.AccessToken
@@ -126,7 +127,7 @@ func getOpenidToken(token *TokenInfo, cred Credentials) (err error) {
 	resp, err := http.PostForm(cred.AuthEndpoint+"/auth/realms/master/protocol/openid-connect/token", values)
 
 	if err != nil {
-		log.Println("ERROR: getOpenidToken::PostForm()", err)
+		slog.Error("getOpenidToken::PostForm()", "error", err)
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {

@@ -19,19 +19,20 @@ package devicerepo
 import (
 	"encoding/json"
 	"errors"
+	"io"
+	"log/slog"
+	"net/http"
+	"net/url"
+	"runtime/debug"
+	"strings"
+	"time"
+
 	"github.com/SENERGY-Platform/device-repository/lib/client"
 	"github.com/SENERGY-Platform/device-repository/lib/model"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/auth"
 	"github.com/SENERGY-Platform/models/go/models"
 	"github.com/SENERGY-Platform/service-commons/pkg/cache"
 	"github.com/SENERGY-Platform/service-commons/pkg/cache/fallback"
-	"io"
-	"log"
-	"net/http"
-	"net/url"
-	"runtime/debug"
-	"strings"
-	"time"
 )
 
 func New(config RepoConfig, auth *auth.Auth) (result *DeviceRepo, err error) {
@@ -99,8 +100,7 @@ func (this *DeviceRepo) GetJson(token string, endpoint string, result interface{
 	}
 	err = json.NewDecoder(resp.Body).Decode(result)
 	if err != nil {
-		log.Println("ERROR:", err.Error())
-		debug.PrintStack()
+		slog.Error("unable to decode json", "error", err, "stack", string(debug.Stack()))
 		return errors.New(err.Error())
 	}
 	return nil
@@ -164,8 +164,7 @@ func (this *DeviceRepo) getConcept(id string) (result models.Concept, err error)
 func (this *DeviceRepo) GetConceptIdOfFunction(id string) string {
 	function, err := this.GetFunction(id)
 	if err != nil {
-		log.Println("ERROR:", err)
-		debug.PrintStack()
+		slog.Error("unable to get function", "error", err)
 		return ""
 	}
 	return function.ConceptId

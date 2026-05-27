@@ -16,24 +16,18 @@
 
 package connector
 
-import "log"
-
 func (this *Connector) EventHandler(topic string, retained bool, payload []byte) {
 	desc, ok := this.eventTopicRegister.Get(topic)
 	if !ok {
-		if this.config.Debug {
-			log.Println("DEBUG: ignore unregistered event", topic, string(payload))
-		}
+		this.config.GetLogger().Debug("got event for unknown device description", "topic", topic, "payload", string(payload))
 		return
 	}
-	if this.config.Debug {
-		log.Println("DEBUG: receive event", topic, string(payload))
-	}
+	this.config.GetLogger().Debug("receive event", "topic", topic, "payload", string(payload))
 	if desc.HasTransformations() {
 		var err error
 		payload, err = this.handleTransformations(desc, TransformerJsonUnwrapOutput, payload)
 		if err != nil {
-			log.Println("ERROR: unable to transform event", topic, err)
+			this.config.GetLogger().Error("unable to transform event", "topic", topic, "error", err)
 			this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform event: "+err.Error())
 			return
 		}
@@ -41,7 +35,7 @@ func (this *Connector) EventHandler(topic string, retained bool, payload []byte)
 	go func() {
 		err := this.mgwClient.SendEvent(desc.GetLocalDeviceId(), desc.GetLocalServiceId(), payload)
 		if err != nil {
-			log.Println("ERROR: unable to send event to mgw", err)
+			this.config.GetLogger().Error("unable to send event to mgw", "topic", topic, "error", err)
 			this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to send event to mgw: "+err.Error())
 		}
 	}()
@@ -50,7 +44,7 @@ func (this *Connector) EventHandler(topic string, retained bool, payload []byte)
 		if !ignore {
 			err := this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), string(state))
 			if err != nil {
-				log.Println("ERROR: unable to send device info to mgw", err)
+				this.config.GetLogger().Error("unable to send device info to mgw", "error", err)
 				this.mgwClient.SendClientError("unable to send device info to mgw: " + err.Error())
 			}
 		}
@@ -58,9 +52,7 @@ func (this *Connector) EventHandler(topic string, retained bool, payload []byte)
 }
 
 func (this *Connector) addEvent(topicDesc TopicDescription) (err error) {
-	if this.config.Debug {
-		log.Println("DEBUG: add event listener", topicDesc)
-	}
+	this.config.GetLogger().Debug("add event listener", "topic", topicDesc.GetEventTopic())
 	eventTopic := topicDesc.GetEventTopic()
 	this.eventTopicRegister.Set(eventTopic, topicDesc)
 	err = this.eventMqttClient.Subscribe(eventTopic, 2, this.EventHandler)
@@ -71,9 +63,7 @@ func (this *Connector) addEvent(topicDesc TopicDescription) (err error) {
 }
 
 func (this *Connector) updateEvent(topic TopicDescription) error {
-	if this.config.Debug {
-		log.Println("DEBUG: update event listener", topic)
-	}
+	this.config.GetLogger().Debug("update event listener", "topic", topic.GetEventTopic())
 	err := this.removeEvent(topic.GetEventTopic())
 	if err != nil {
 		return err
@@ -82,9 +72,7 @@ func (this *Connector) updateEvent(topic TopicDescription) error {
 }
 
 func (this *Connector) removeEvent(topic string) (err error) {
-	if this.config.Debug {
-		log.Println("DEBUG: remove event listener", topic)
-	}
+	this.config.GetLogger().Debug("remove event listener", "topic", topic)
 	desc, exists := this.eventTopicRegister.Get(topic)
 	if !exists {
 		return nil

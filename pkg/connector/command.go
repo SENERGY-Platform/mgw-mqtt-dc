@@ -17,10 +17,10 @@
 package connector
 
 import (
+	"time"
+
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
-	"log"
-	"time"
 )
 
 func (this *Connector) CommandHandler(deviceId string, serviceId string, command mgw.Command) {
@@ -28,7 +28,7 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 		cmdId := getCommandId(deviceId, serviceId)
 		desc, ok := this.commandTopicRegister.Get(cmdId)
 		if !ok {
-			log.Println("WARNING: got command for unknown device description", cmdId)
+			this.config.GetLogger().Warn("got command for unknown device description", "cmdId", cmdId)
 			return
 		}
 
@@ -38,7 +38,7 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 			var err error
 			payload, err = this.handleTransformations(desc, TransformerJsonUnwrapInput, payload)
 			if err != nil {
-				log.Println("ERROR: transform command", deviceId, serviceId, err)
+				this.config.GetLogger().Error("unable to transform command", "deviceId", deviceId, "serviceId", serviceId, "error", err)
 				this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform command: "+err.Error())
 				return
 			}
@@ -51,7 +51,7 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 
 		err := this.commandMqttClient.Publish(desc.GetCmdTopic(), 2, false, payload)
 		if err != nil {
-			log.Println("ERROR: unable to send command to mqtt", err)
+			this.config.GetLogger().Error("unable to send command to mqtt", "deviceId", deviceId, "serviceId", serviceId, "error", err)
 			this.mgwClient.SendCommandError(command.CommandId, "unable to send command to mqtt: "+err.Error())
 			this.removeCorrelationId(cmdId, command.CommandId)
 		}
@@ -62,7 +62,7 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 				Data:      "",
 			})
 			if err != nil {
-				log.Println("ERROR: unable to send empty response", err)
+				this.config.GetLogger().Error("unable to send empty response", "deviceId", deviceId, "serviceId", serviceId, "error", err)
 				this.mgwClient.SendCommandError(command.CommandId, "unable to send empty response: "+err.Error())
 			}
 		}
@@ -79,7 +79,7 @@ func (this *Connector) removeOldCorrelationIds(key string) {
 		return util.ListFilter(l, func(value CorrelationId) bool {
 			toOld := time.Since(value.date) > this.MaxCorrelationIdAge
 			if toOld {
-				log.Println("WARNING: drop correlation id because its older than MaxCorrelationIdAge", value.id, value.date.String())
+				this.config.GetLogger().Warn("drop correlation id because its older than MaxCorrelationIdAge", "correlationId", value.id, "key", key, "age", time.Since(value.date).String())
 			}
 			return !toOld
 		})

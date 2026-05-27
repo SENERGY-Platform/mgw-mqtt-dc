@@ -18,12 +18,13 @@ package generator
 
 import (
 	"encoding/json"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
-	"log"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 )
 
 func Store(descriptions []model.TopicDescription, dir string) (err error) {
@@ -38,7 +39,7 @@ func Store(descriptions []model.TopicDescription, dir string) (err error) {
 		fileName := getGeneratedFileName(localId)
 		generatedFiles[fileName] = true
 		fileLocation := filepath.Join(dir, fileName)
-		log.Println("GENERATOR: update/create", fileLocation)
+		slog.Debug("GENERATOR: update/create", "file", fileLocation, "localId", localId, "descriptions", len(desc))
 		err = StoreFile(desc, fileLocation)
 		if err != nil {
 			return err
@@ -54,7 +55,7 @@ func Store(descriptions []model.TopicDescription, dir string) (err error) {
 		name := f.Name()
 		if !generatedFiles[name] && strings.HasPrefix(name, FileNamePrefix) {
 			fileLocation := filepath.Join(dir, name)
-			log.Println("GENERATOR: remove", fileLocation)
+			slog.Debug("GENERATOR: remove", "file", fileLocation)
 			err = os.Remove(fileLocation)
 			if err != nil {
 				return err

@@ -18,13 +18,14 @@ package generator
 
 import (
 	"bytes"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
-	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
-	"github.com/SENERGY-Platform/models/go/models"
-	"log"
+	"log/slog"
 	"slices"
 	"strings"
 	"text/template"
+
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
+	"github.com/SENERGY-Platform/models/go/models"
 )
 
 const CommandAttribute = "senergy/local-mqtt/cmd-topic-tmpl"
@@ -73,7 +74,7 @@ func GenerateCommandServiceTopicDescriptions(device models.Device, service model
 	}
 	cmdTopic, err := GenerateTopic(cmdTopicTempl, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
 	if err != nil {
-		log.Println("WARNING: invalid command topic template", cmdTopicTempl, "in", device.Name, device.Id, device.LocalId, service.Name, service.Id, service.LocalId)
+		slog.Warn("invalid command topic template", "error", err, "template", cmdTopicTempl, "device", device.Name, "device_id", device.Id, "local_device_id", device.LocalId, "service", service.Name, "service_id", service.Id, "local_service_id", service.LocalId)
 		return result
 	}
 	temp := model.TopicDescription{
@@ -114,7 +115,7 @@ func GenerateCommandServiceTopicDescriptions(device models.Device, service model
 	if found {
 		temp.RespTopic, err = GenerateTopic(respTopic, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
 		if err != nil {
-			log.Println("WARNING: invalid response topic template", cmdTopicTempl, "in", device.Name, device.Id, device.LocalId, service.Name, service.Id, service.LocalId)
+			slog.Warn("invalid response topic template", "error", err, "template", respTopic, "device", device.Name, "device_id", device.Id, "local_device_id", device.LocalId, "service", service.Name, "service_id", service.Id, "local_service_id", service.LocalId)
 			return result
 		}
 	}
@@ -128,7 +129,7 @@ func GenerateEventServiceTopicDescriptions(device models.Device, service models.
 	}
 	eventTopic, err := GenerateTopic(eventTopicTempl, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
 	if err != nil {
-		log.Println("WARNING: invalid event topic template", eventTopic, "in", device.Name, device.Id, device.LocalId, service.Name, service.Id, service.LocalId)
+		slog.Warn("invalid event topic template", "error", err, "template", eventTopicTempl, "device", device.Name, "device_id", device.Id, "local_device_id", device.LocalId, "service", service.Name, "service_id", service.Id, "local_service_id", service.LocalId)
 		return result
 	}
 	temp := model.TopicDescription{

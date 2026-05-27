@@ -17,11 +17,12 @@
 package generator
 
 import (
+	"log/slog"
+
 	"github.com/SENERGY-Platform/device-repository/lib/client"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/models/go/models"
-	"log"
 )
 
 const AttributeUsedForGenerator = "senergy/local-mqtt"
@@ -72,11 +73,11 @@ func GetDeviceInfos(repo *devicerepo.DeviceRepo, filterDevicesByAttribute string
 		return devices, deviceTypes, err
 	}
 
-	log.Println("filter devices with different owner as", expectedOwnerId)
+	slog.Debug("filter devices with different owner as", "expectedOwnerId", expectedOwnerId)
 	devices = util.ListFilter(devices, func(d models.Device) bool {
 		keep := d.OwnerId == expectedOwnerId
 		if !keep {
-			log.Println("ignore", d.Id, d.LocalId, d.Name, "because", d.OwnerId, "!=", expectedOwnerId)
+			slog.Debug("ignore device", "id", d.Id, "local_id", d.LocalId, "name", d.Name, "because", d.OwnerId+"!="+expectedOwnerId)
 		}
 		return keep
 	})

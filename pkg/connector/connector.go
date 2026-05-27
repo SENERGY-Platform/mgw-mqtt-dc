@@ -18,6 +18,9 @@ package connector
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/connector/onlinechecker"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
@@ -26,10 +29,6 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mqtt"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
-	"log"
-	"runtime/debug"
-	"sync"
-	"time"
 )
 
 type Connector struct {
@@ -128,7 +127,7 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 func (this *Connector) RefreshDeviceInfo() {
 	err := this.updateTopics()
 	if err != nil {
-		log.Println("ERROR: unable to update device registry after refresh notification:", err)
+		this.config.GetLogger().Error("unable to update device registry after refresh notification", "error", err)
 		this.mgwClient.SendClientError("unable to update device registry after refresh notification: " + err.Error())
 	}
 	return
@@ -146,7 +145,7 @@ func (this *Connector) startPeriodicalTopicRegistryUpdate(ctx context.Context) (
 	if this.config.UpdatePeriod != "" && this.config.UpdatePeriod != "-" {
 		this.updateTickerDuration, err = time.ParseDuration(this.config.UpdatePeriod)
 		if err != nil {
-			log.Println("ERROR: unable to parse update period as duration")
+			this.config.GetLogger().Error("unable to parse update period as duration", "error", err, "period", this.config.UpdatePeriod)
 			this.mgwClient.SendClientError("unable to parse update period as duration: " + err.Error())
 			return err
 		}
@@ -164,9 +163,8 @@ func (this *Connector) startPeriodicalTopicRegistryUpdate(ctx context.Context) (
 				case <-this.updateTicker.C:
 					err = this.updateTopics()
 					if err != nil {
-						log.Println("ERROR:", err)
+						this.config.GetLogger().Error("unable to update topic registry", "error", err)
 						this.mgwClient.SendClientError(err.Error())
-						debug.PrintStack()
 					}
 				}
 			}
