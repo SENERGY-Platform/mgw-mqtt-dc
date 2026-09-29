@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	paho "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -41,7 +42,7 @@ func (this *Client) ListenToDeviceCommands(deviceId string, commandHandler Devic
 		err := json.Unmarshal(message.Payload(), &command)
 		if err != nil {
 			slog.Error("unable to unmarshal command", "error", err)
-			this.SendClientError("unable to unmarshal command: " + err.Error())
+			this.SendClientError("unable to unmarshal command: " + util.MgwErrorMessage(err))
 			return
 		}
 		commandHandler(deviceId, serviceId, command)

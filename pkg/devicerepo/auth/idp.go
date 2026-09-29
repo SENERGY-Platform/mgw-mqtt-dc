@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/SENERGY-Platform/mgw-cloud-proxy/cert-manager/lib/client"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"net/http"
 	"net/url"
 	"sync"
@@ -38,6 +39,8 @@ func NewMgwIdpClient(mgwCertManagerUrl string) (*MgwIdpClient, error) {
 	return &MgwIdpClient{client: client.New(http.DefaultClient, mgwCertManagerUrl)}, nil
 }
 
+const CertManagerServiceName = "mgw-cert-manager"
+
 type MgwIdpClient struct {
 	client                *client.Client
 	lastUserId            string
@@ -53,7 +56,11 @@ func (this *MgwIdpClient) GetUserId() (string, error) {
 	}
 	network, err := this.client.NetworkInfo(context.Background(), false, "")
 	if err != nil {
-		return "", err
+		var respErr *client.ResponseError
+		if errors.As(err, &respErr) {
+			return "", &util.ExternalError{Service: CertManagerServiceName, Msg: "unexpected response status", StatusCode: respErr.Code, Err: err}
+		}
+		return "", &util.ExternalError{Service: CertManagerServiceName, Msg: "request failed", Err: err}
 	}
 	this.lastUserId = network.UserID
 	this.lastUserIdRequestTime = time.Now()

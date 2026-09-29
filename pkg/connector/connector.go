@@ -128,7 +128,7 @@ func (this *Connector) RefreshDeviceInfo() {
 	err := this.updateTopics()
 	if err != nil {
 		this.config.GetLogger().Error("unable to update device registry after refresh notification", "error", err)
-		this.mgwClient.SendClientError("unable to update device registry after refresh notification: " + err.Error())
+		this.mgwClient.SendClientError("unable to update device registry after refresh notification: " + util.MgwErrorMessage(err))
 	}
 	return
 }
@@ -146,7 +146,7 @@ func (this *Connector) startPeriodicalTopicRegistryUpdate(ctx context.Context) (
 		this.updateTickerDuration, err = time.ParseDuration(this.config.UpdatePeriod)
 		if err != nil {
 			this.config.GetLogger().Error("unable to parse update period as duration", "error", err, "period", this.config.UpdatePeriod)
-			this.mgwClient.SendClientError("unable to parse update period as duration: " + err.Error())
+			this.mgwClient.SendClientError("unable to parse update period as duration: " + util.MgwErrorMessage(err))
 			return err
 		}
 		this.updateTicker = time.NewTicker(this.updateTickerDuration)
@@ -164,7 +164,7 @@ func (this *Connector) startPeriodicalTopicRegistryUpdate(ctx context.Context) (
 					err = this.updateTopics()
 					if err != nil {
 						this.config.GetLogger().Error("unable to update topic registry", "error", err)
-						this.mgwClient.SendClientError(err.Error())
+						this.mgwClient.SendClientError(util.MgwErrorMessage(err))
 					}
 				}
 			}

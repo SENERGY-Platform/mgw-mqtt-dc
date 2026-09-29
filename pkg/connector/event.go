@@ -16,6 +16,8 @@
 
 package connector
 
+import "github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
+
 func (this *Connector) EventHandler(topic string, retained bool, payload []byte) {
 	desc, ok := this.eventTopicRegister.Get(topic)
 	if !ok {
@@ -28,7 +30,7 @@ func (this *Connector) EventHandler(topic string, retained bool, payload []byte)
 		payload, err = this.handleTransformations(desc, TransformerJsonUnwrapOutput, payload)
 		if err != nil {
 			this.config.GetLogger().Error("unable to transform event", "topic", topic, "error", err)
-			this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform event: "+err.Error())
+			this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform event: "+util.MgwErrorMessage(err))
 			return
 		}
 	}
@@ -36,7 +38,7 @@ func (this *Connector) EventHandler(topic string, retained bool, payload []byte)
 		err := this.mgwClient.SendEvent(desc.GetLocalDeviceId(), desc.GetLocalServiceId(), payload)
 		if err != nil {
 			this.config.GetLogger().Error("unable to send event to mgw", "topic", topic, "error", err)
-			this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to send event to mgw: "+err.Error())
+			this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to send event to mgw: "+util.MgwErrorMessage(err))
 		}
 	}()
 	go func() {
@@ -45,7 +47,7 @@ func (this *Connector) EventHandler(topic string, retained bool, payload []byte)
 			err := this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), string(state))
 			if err != nil {
 				this.config.GetLogger().Error("unable to send device info to mgw", "error", err)
-				this.mgwClient.SendClientError("unable to send device info to mgw: " + err.Error())
+				this.mgwClient.SendClientError("unable to send device info to mgw: " + util.MgwErrorMessage(err))
 			}
 		}
 	}()

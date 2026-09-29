@@ -21,6 +21,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
+
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 )
 
@@ -149,7 +151,7 @@ func (this *Connector) updateTopics() (err error) {
 		err = this.mgwClient.SetDevice(desc.GetLocalDeviceId(), desc.GetDeviceName(), desc.GetDeviceTypeId(), string(state))
 		if err != nil {
 			this.config.GetLogger().Error("unable to send device info to mgw", "error", err)
-			this.mgwClient.SendClientError("unable to send device info to mgw: " + err.Error())
+			this.mgwClient.SendClientError("unable to send device info to mgw: " + util.MgwErrorMessage(err))
 			return err
 		}
 		if _, ok := oldDevices[id]; !ok {
@@ -193,7 +195,7 @@ func (this *Connector) addDeviceCommandListener(device DeviceDescription) (err e
 	err = this.mgwClient.ListenToDeviceCommands(device.GetLocalDeviceId(), this.CommandHandler)
 	if err != nil {
 		this.config.GetLogger().Error("unable to subscribe to device commands", "error", err)
-		this.mgwClient.SendClientError("unable to subscribe to device commands: " + err.Error())
+		this.mgwClient.SendClientError("unable to subscribe to device commands: " + util.MgwErrorMessage(err))
 		return err
 	}
 	return nil

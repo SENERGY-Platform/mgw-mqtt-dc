@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/service-commons/pkg/jwt"
 )
 
@@ -128,17 +129,9 @@ func getOpenidToken(token *TokenInfo, cred Credentials) (err error) {
 
 	if err != nil {
 		slog.Error("getOpenidToken::PostForm()", "error", err)
-		return err
+		return &util.ExternalError{Service: ServiceName, Msg: "request failed", Err: err}
 	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		err = errors.New(string(body))
-		resp.Body.Close()
-		return
-	}
-	err = json.NewDecoder(resp.Body).Decode(token)
-	token.RequestTime = requesttime
-	return
+	return handleTokenResponse(resp, token, requesttime)
 }
 
 func refreshOpenidToken(token *TokenInfo, cred Credentials) (err error) {
@@ -150,15 +143,23 @@ func refreshOpenidToken(token *TokenInfo, cred Credentials) (err error) {
 	})
 
 	if err != nil {
-		return err
+		return &util.ExternalError{Service: ServiceName, Msg: "request failed", Err: err}
 	}
+	return handleTokenResponse(resp, token, requesttime)
+}
+
+const ServiceName = "auth"
+
+func handleTokenResponse(resp *http.Response, token *TokenInfo, requesttime time.Time) (err error) {
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		err = errors.New(string(body))
-		resp.Body.Close()
-		return
+		return &util.ExternalError{Service: ServiceName, Msg: "unexpected response status", StatusCode: resp.StatusCode, Err: errors.New(string(body))}
 	}
 	err = json.NewDecoder(resp.Body).Decode(token)
+	if err != nil {
+		return &util.ExternalError{Service: ServiceName, Msg: "unable to decode response", Err: err}
+	}
 	token.RequestTime = requesttime
-	return
+	return nil
 }

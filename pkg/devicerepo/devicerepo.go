@@ -30,6 +30,7 @@ import (
 	"github.com/SENERGY-Platform/device-repository/lib/client"
 	"github.com/SENERGY-Platform/device-repository/lib/model"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo/auth"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/models/go/models"
 	"github.com/SENERGY-Platform/service-commons/pkg/cache"
 	"github.com/SENERGY-Platform/service-commons/pkg/cache/fallback"
@@ -86,24 +87,39 @@ func (this *DeviceRepo) GetJson(token string, endpoint string, result interface{
 	}
 	resp, err := c.Do(req)
 	if err != nil {
-		return err
+		return &util.ExternalError{Service: ServiceName, Msg: "request failed", Err: err}
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 500 {
-		//internal service errors may be retried
-		temp, _ := io.ReadAll(resp.Body)
-		return errors.New(strings.TrimSpace(string(temp)))
-	}
 	if resp.StatusCode >= 300 {
 		temp, _ := io.ReadAll(resp.Body)
-		return errors.New(strings.TrimSpace(string(temp)))
+		return &util.ExternalError{Service: ServiceName, Msg: "unexpected response status", StatusCode: resp.StatusCode, Err: errors.New(strings.TrimSpace(string(temp)))}
 	}
 	err = json.NewDecoder(resp.Body).Decode(result)
 	if err != nil {
 		slog.Error("unable to decode json", "error", err, "stack", string(debug.Stack()))
-		return errors.New(err.Error())
+		return &util.ExternalError{Service: ServiceName, Msg: "unable to decode response", Err: err}
 	}
 	return nil
+}
+
+const ServiceName = "device-repository"
+
+// wrapClientError converts errors of the device-repository client into util.ExternalError
+func wrapClientError(err error, code int) error {
+	if err == nil {
+		return nil
+	}
+	var externalErr *util.ExternalError
+	if errors.As(err, &externalErr) {
+		// e.g. token errors
+		return err
+	}
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		// the client reports transport errors as http.StatusInternalServerError, which is not a response status
+		return &util.ExternalError{Service: ServiceName, Msg: "request failed", Err: err}
+	}
+	return &util.ExternalError{Service: ServiceName, Msg: "unexpected response", StatusCode: code, Err: err}
 }
 
 func (this *DeviceRepo) GetToken() (string, error) {
@@ -245,9 +261,10 @@ func (this *DeviceRepo) GetService(deviceTypeId string, localServiceId string) (
 
 func (this *DeviceRepo) ListDeviceTypes(token string, listOptions model.DeviceTypeListOptions) (result []models.DeviceType, err error, errCode int) {
 	result, _, err, errCode = this.client.ListDeviceTypesV3(token, listOptions)
-	return
+	return result, wrapClientError(err, errCode), errCode
 }
 
 func (this *DeviceRepo) ListDevices(token string, options model.DeviceListOptions) (result []models.Device, err error, errCode int) {
-	return this.client.ListDevices(token, options)
+	result, err, errCode = this.client.ListDevices(token, options)
+	return result, wrapClientError(err, errCode), errCode
 }

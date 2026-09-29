@@ -18,13 +18,17 @@ package connector
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"slices"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/configuration"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 )
 
 type recordingMgwMock struct {
@@ -33,6 +37,13 @@ type recordingMgwMock struct {
 	devices      []string
 	removed      []string
 	deviceErrors map[string]string
+	clientErrors []string
+}
+
+func (this *recordingMgwMock) SendClientError(message string) {
+	this.mux.Lock()
+	defer this.mux.Unlock()
+	this.clientErrors = append(this.clientErrors, message)
 }
 
 func (this *recordingMgwMock) SetDevice(deviceId string, name string, deviceTypeid string, state string) error {
@@ -161,5 +172,24 @@ func TestValidateTopicDescriptionsStableReasons(t *testing.T) {
 				t.Fatalf("unstable reasons for device %v: %v != %v", deviceId, reasons, first[deviceId])
 			}
 		}
+	}
+}
+
+func TestRefreshDeviceInfoSendsStableExternalError(t *testing.T) {
+	mgwMock := &recordingMgwMock{deviceErrors: map[string]string{}}
+	conn, err := NewWithFactories(context.Background(), configuration.Config{}, NewTopicDescriptionProvider(func(config configuration.Config, repo *devicerepo.DeviceRepo) ([]model.TopicDescription, error) {
+		body := errors.New(time.Now().Format(time.RFC3339Nano) + " upstream unavailable")
+		return nil, fmt.Errorf("unable to load: %w", &util.ExternalError{Service: "device-repository", Msg: "unexpected response status", StatusCode: 502, Err: body})
+	}), func(ctx context.Context, config configuration.Config, refreshNotifier func()) (MgwClient, error) {
+		return mgwMock, nil
+	}, NewMqttFactory(newMqttMock))
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn.RefreshDeviceInfo()
+	conn.RefreshDeviceInfo()
+	expected := "unable to update device registry after refresh notification: device-repository: unexpected response status (status code 502)"
+	if !slices.Equal(mgwMock.clientErrors, []string{expected, expected}) {
+		t.Errorf("unexpected client errors: %v", mgwMock.clientErrors)
 	}
 }

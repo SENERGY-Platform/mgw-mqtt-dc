@@ -18,6 +18,7 @@ package connector
 
 import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
+	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 )
 
 func (this *Connector) ResponseHandler(topic string, retained bool, payload []byte) {
@@ -37,7 +38,7 @@ func (this *Connector) ResponseHandler(topic string, retained bool, payload []by
 			payload, err = this.handleTransformations(desc, TransformerJsonUnwrapOutput, payload)
 			if err != nil {
 				this.config.GetLogger().Error("unable to transform response", "deviceId", deviceId, "serviceId", serviceId, "error", err)
-				this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform response: "+err.Error())
+				this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform response: "+util.MgwErrorMessage(err))
 				return
 			}
 		}
@@ -52,7 +53,7 @@ func (this *Connector) ResponseHandler(topic string, retained bool, payload []by
 		})
 		if err != nil {
 			this.config.GetLogger().Error("unable to send response", "deviceId", deviceId, "serviceId", serviceId, "error", err)
-			this.mgwClient.SendCommandError(correlationId, "unable to send response: "+err.Error())
+			this.mgwClient.SendCommandError(correlationId, "unable to send response: "+util.MgwErrorMessage(err))
 		}
 	}()
 }

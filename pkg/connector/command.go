@@ -39,7 +39,7 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 			payload, err = this.handleTransformations(desc, TransformerJsonUnwrapInput, payload)
 			if err != nil {
 				this.config.GetLogger().Error("unable to transform command", "deviceId", deviceId, "serviceId", serviceId, "error", err)
-				this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform command: "+err.Error())
+				this.mgwClient.SendDeviceError(desc.GetLocalDeviceId(), "unable to transform command: "+util.MgwErrorMessage(err))
 				return
 			}
 		}
@@ -52,7 +52,7 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 		err := this.commandMqttClient.Publish(desc.GetCmdTopic(), 2, false, payload)
 		if err != nil {
 			this.config.GetLogger().Error("unable to send command to mqtt", "deviceId", deviceId, "serviceId", serviceId, "error", err)
-			this.mgwClient.SendCommandError(command.CommandId, "unable to send command to mqtt: "+err.Error())
+			this.mgwClient.SendCommandError(command.CommandId, "unable to send command to mqtt: "+util.MgwErrorMessage(err))
 			this.removeCorrelationId(cmdId, command.CommandId)
 		}
 
@@ -63,7 +63,7 @@ func (this *Connector) CommandHandler(deviceId string, serviceId string, command
 			})
 			if err != nil {
 				this.config.GetLogger().Error("unable to send empty response", "deviceId", deviceId, "serviceId", serviceId, "error", err)
-				this.mgwClient.SendCommandError(command.CommandId, "unable to send empty response: "+err.Error())
+				this.mgwClient.SendCommandError(command.CommandId, "unable to send empty response: "+util.MgwErrorMessage(err))
 			}
 		}
 	}()
