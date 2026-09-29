@@ -19,7 +19,7 @@ package generator
 import (
 	"log/slog"
 
-	"github.com/SENERGY-Platform/device-repository/lib/client"
+	"github.com/SENERGY-Platform/device-repository/v2/lib/client"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/devicerepo"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/models/go/models"

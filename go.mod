@@ -4,11 +4,11 @@ go 1.26
 
 require (
 	github.com/SENERGY-Platform/converter v0.0.12
-	github.com/SENERGY-Platform/device-repository v0.3.2
+	github.com/SENERGY-Platform/device-repository/v2 v2.2.2
 	github.com/SENERGY-Platform/go-service-base/struct-logger v0.8.0
-	github.com/SENERGY-Platform/marshaller v0.0.24
+	github.com/SENERGY-Platform/marshaller v0.2.0
 	github.com/SENERGY-Platform/mgw-cloud-proxy/cert-manager/lib v0.0.4
-	github.com/SENERGY-Platform/models/go v0.0.0-20260710115411-5b8e00d6e038
+	github.com/SENERGY-Platform/models/go v0.0.0-20260911075423-f01521c01da2
 	github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20260826082643-802ca9df203c
 	github.com/SENERGY-Platform/service-commons v0.0.0-20260821114734-3e4578ac2358
 	github.com/eclipse/paho.mqtt.golang v1.4.3
@@ -26,6 +26,8 @@ require (
 	github.com/RyanCarrier/dijkstra v1.4.0 // indirect
 	github.com/SENERGY-Platform/developer-notifications v0.0.6 // indirect
 	github.com/SENERGY-Platform/gin-middleware v0.14.1 // indirect
+	github.com/SENERGY-Platform/go-env-loader v0.5.3 // indirect
+	github.com/SENERGY-Platform/go-service-base/config-hdl v1.2.0 // indirect
 	github.com/SENERGY-Platform/permissions-v2 v0.0.47 // indirect
 	github.com/bytedance/gopkg v0.1.4 // indirect
 	github.com/bytedance/sonic v1.15.1 // indirect
@@ -133,17 +135,17 @@ require (
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/arch v0.27.0 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
-	golang.org/x/mod v0.35.0 // indirect
-	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
-	golang.org/x/tools v0.44.0 // indirect
+	golang.org/x/mod v0.38.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/tools v0.48.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
-	google.golang.org/grpc v1.82.1 // indirect
+	google.golang.org/grpc v1.83.2 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/go-playground/colors.v1 v1.2.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
