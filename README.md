@@ -47,6 +47,9 @@ Boolean. Decides if removed devices should be deleted or markt as offline.
 #### max_correlation_id_age
 String. Duration.
 
+#### error_deduplication_period
+String. Duration. An error message is forwarded to the MGW only if the same message (same topic and text) has not been sent within this period. Empty or `-` disables the deduplication.
+
 #### generator_use
 Boolean. Decides if Topic-Descriptions should be generated.
 

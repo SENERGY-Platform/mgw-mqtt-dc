@@ -15,6 +15,7 @@
     "mqtt_insecure_skip_verify": false,
     "delete_devices": true,
     "max_correlation_id_age": "90s",
+    "error_deduplication_period": "1h",
 
     "generator_use": false,
     "generator_auth_username": "",

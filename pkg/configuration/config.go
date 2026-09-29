@@ -34,22 +34,23 @@ import (
 )
 
 type Config struct {
-	ConnectorId            string `json:"connector_id"`
-	MgwMqttBroker          string `json:"mgw_mqtt_broker"`
-	MgwMqttUser            string `json:"mgw_mqtt_user"`
-	MgwMqttPw              string `json:"mgw_mqtt_pw"`
-	MgwMqttClientId        string `json:"mgw_mqtt_client_id"`
-	Debug                  bool   `json:"debug"`
-	UpdatePeriod           string `json:"update_period"`
-	DeviceDescriptionsDir  string `json:"device_descriptions_dir"`
-	MqttPw                 string `json:"mqtt_pw"`
-	MqttUser               string `json:"mqtt_user"`
-	MqttEventClientId      string `json:"mqtt_event_client_id"`
-	MqttCmdClientId        string `json:"mqtt_cmd_client_id"`
-	MqttBroker             string `json:"mqtt_broker"`
-	MqttInsecureSkipVerify bool   `json:"mqtt_insecure_skip_verify"`
-	DeleteDevices          bool   `json:"delete_devices"`
-	MaxCorrelationIdAge    string `json:"max_correlation_id_age"`
+	ConnectorId              string `json:"connector_id"`
+	MgwMqttBroker            string `json:"mgw_mqtt_broker"`
+	MgwMqttUser              string `json:"mgw_mqtt_user"`
+	MgwMqttPw                string `json:"mgw_mqtt_pw"`
+	MgwMqttClientId          string `json:"mgw_mqtt_client_id"`
+	Debug                    bool   `json:"debug"`
+	UpdatePeriod             string `json:"update_period"`
+	DeviceDescriptionsDir    string `json:"device_descriptions_dir"`
+	MqttPw                   string `json:"mqtt_pw"`
+	MqttUser                 string `json:"mqtt_user"`
+	MqttEventClientId        string `json:"mqtt_event_client_id"`
+	MqttCmdClientId          string `json:"mqtt_cmd_client_id"`
+	MqttBroker               string `json:"mqtt_broker"`
+	MqttInsecureSkipVerify   bool   `json:"mqtt_insecure_skip_verify"`
+	DeleteDevices            bool   `json:"delete_devices"`
+	MaxCorrelationIdAge      string `json:"max_correlation_id_age"`
+	ErrorDeduplicationPeriod string `json:"error_deduplication_period"`
 
 	GeneratorUse bool `json:"generator_use"`
 

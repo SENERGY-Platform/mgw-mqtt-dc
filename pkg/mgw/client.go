@@ -35,14 +35,23 @@ type Client struct {
 	subscriptions                map[string]paho.MessageHandler
 	subscriptionsMux             sync.Mutex
 	deviceManagerRefreshNotifier func()
+	errorDeduplication           *errorDeduplication
 }
 
-func New(ctx context.Context, config configuration.Config, refreshNotifier func()) (*Client, error) {
-	client := &Client{
+func New(ctx context.Context, config configuration.Config, refreshNotifier func()) (client *Client, err error) {
+	client = &Client{
 		connectorId:                  config.ConnectorId,
 		debug:                        config.Debug,
 		deviceManagerRefreshNotifier: refreshNotifier,
 		subscriptions:                map[string]paho.MessageHandler{},
+	}
+	if config.ErrorDeduplicationPeriod != "" && config.ErrorDeduplicationPeriod != "-" {
+		errorDeduplicationPeriod, err := time.ParseDuration(config.ErrorDeduplicationPeriod)
+		if err != nil {
+			config.GetLogger().Error("unable to parse error deduplication period as duration", "error", err, "period", config.ErrorDeduplicationPeriod)
+			return nil, err
+		}
+		client.errorDeduplication = newErrorDeduplication(errorDeduplicationPeriod)
 	}
 	lwt := "device-manager/device/" + config.ConnectorId + "/lw"
 	options := paho.NewClientOptions().
