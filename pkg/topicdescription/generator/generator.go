@@ -22,6 +22,7 @@ import (
 	"slices"
 	"strings"
 	"text/template"
+	"text/template/parse"
 
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/topicdescription/model"
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
@@ -72,10 +73,13 @@ func GenerateCommandServiceTopicDescriptions(device models.Device, service model
 	if !found {
 		return result
 	}
-	cmdTopic, err := GenerateTopic(cmdTopicTempl, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
+	cmdTopic, missingKeys, err := GenerateTopic(cmdTopicTempl, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
 	if err != nil {
 		slog.Warn("invalid command topic template", "error", err, "template", cmdTopicTempl, "device", device.Name, "device_id", device.Id, "local_device_id", device.LocalId, "service", service.Name, "service_id", service.Id, "local_service_id", service.LocalId)
 		return result
+	}
+	if len(missingKeys) > 0 {
+		slog.Warn("command topic template uses missing device attributes", "missing_keys", missingKeys, "template", cmdTopicTempl, "topic", cmdTopic, "device", device.Name, "device_id", device.Id, "local_device_id", device.LocalId, "service", service.Name, "service_id", service.Id, "local_service_id", service.LocalId)
 	}
 	temp := model.TopicDescription{
 		CmdTopic:       cmdTopic,
@@ -113,10 +117,13 @@ func GenerateCommandServiceTopicDescriptions(device models.Device, service model
 	})
 	respTopic, found := GetAttributeValue(service.Attributes, ResponseAttribute)
 	if found {
-		temp.RespTopic, err = GenerateTopic(respTopic, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
+		temp.RespTopic, missingKeys, err = GenerateTopic(respTopic, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
 		if err != nil {
 			slog.Warn("invalid response topic template", "error", err, "template", respTopic, "device", device.Name, "device_id", device.Id, "local_device_id", device.LocalId, "service", service.Name, "service_id", service.Id, "local_service_id", service.LocalId)
 			return result
+		}
+		if len(missingKeys) > 0 {
+			slog.Warn("response topic template uses missing device attributes", "missing_keys", missingKeys, "template", respTopic, "topic", temp.RespTopic, "device", device.Name, "device_id", device.Id, "local_device_id", device.LocalId, "service", service.Name, "service_id", service.Id, "local_service_id", service.LocalId)
 		}
 	}
 	return []model.TopicDescription{temp}
@@ -127,10 +134,13 @@ func GenerateEventServiceTopicDescriptions(device models.Device, service models.
 	if !found {
 		return result
 	}
-	eventTopic, err := GenerateTopic(eventTopicTempl, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
+	eventTopic, missingKeys, err := GenerateTopic(eventTopicTempl, device.LocalId, service.LocalId, truncateDevicePrefix, device.Attributes)
 	if err != nil {
 		slog.Warn("invalid event topic template", "error", err, "template", eventTopicTempl, "device", device.Name, "device_id", device.Id, "local_device_id", device.LocalId, "service", service.Name, "service_id", service.Id, "local_service_id", service.LocalId)
 		return result
+	}
+	if len(missingKeys) > 0 {
+		slog.Warn("event topic template uses missing device attributes", "missing_keys", missingKeys, "template", eventTopicTempl, "topic", eventTopic, "device", device.Name, "device_id", device.Id, "local_device_id", device.LocalId, "service", service.Name, "service_id", service.Id, "local_service_id", service.LocalId)
 	}
 	temp := model.TopicDescription{
 		EventTopic:     eventTopic,
@@ -177,7 +187,9 @@ func GetAttributeValue(attributes []models.Attribute, key string) (result string
 	return result, false
 }
 
-func GenerateTopic(topicTemplate string, deviceId string, serviceId string, truncateDevicePrefix string, attributes []models.Attribute) (result string, err error) {
+// GenerateTopic fills the topic template. placeholders without a value are replaced by an empty string
+// and returned as missingKeys, so that the caller can report them.
+func GenerateTopic(topicTemplate string, deviceId string, serviceId string, truncateDevicePrefix string, attributes []models.Attribute) (result string, missingKeys []string, err error) {
 	values := map[string]string{}
 	for _, placeholder := range TemplateLocalDeviceIdPlaceholders {
 		temp := deviceId
@@ -199,13 +211,53 @@ func GenerateTopic(topicTemplate string, deviceId string, serviceId string, trun
 	var temp bytes.Buffer
 	t, err := template.New("").Option("missingkey=zero").Parse(topicTemplate)
 	if err != nil {
-		return "", err
+		return "", nil, err
+	}
+	for _, key := range templateFieldKeys(t.Tree.Root) {
+		if _, ok := values[key]; !ok && !slices.Contains(missingKeys, key) {
+			missingKeys = append(missingKeys, key)
+		}
 	}
 	err = t.Execute(&temp, values)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return temp.String(), nil
+	return temp.String(), missingKeys, nil
+}
+
+// templateFieldKeys returns the first identifier of every field (e.g. "CmdPrefix" for {{.CmdPrefix}}) used in the template
+func templateFieldKeys(node parse.Node) (result []string) {
+	switch n := node.(type) {
+	case *parse.ListNode:
+		if n == nil {
+			return nil
+		}
+		for _, child := range n.Nodes {
+			result = append(result, templateFieldKeys(child)...)
+		}
+	case *parse.ActionNode:
+		result = append(result, templateFieldKeys(n.Pipe)...)
+	case *parse.PipeNode:
+		if n == nil {
+			return nil
+		}
+		for _, cmd := range n.Cmds {
+			result = append(result, templateFieldKeys(cmd)...)
+		}
+	case *parse.CommandNode:
+		for _, arg := range n.Args {
+			result = append(result, templateFieldKeys(arg)...)
+		}
+	case *parse.FieldNode:
+		if len(n.Ident) > 0 {
+			result = append(result, n.Ident[0])
+		}
+	case *parse.IfNode:
+		result = append(result, templateFieldKeys(n.Pipe)...)
+		result = append(result, templateFieldKeys(n.List)...)
+		result = append(result, templateFieldKeys(n.ElseList)...)
+	}
+	return result
 }
 
 func isValidPlaceholder(key string) bool {

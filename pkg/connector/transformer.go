@@ -19,6 +19,7 @@ package connector
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -77,11 +78,13 @@ func recursiveJsonUnwrap(value interface{}, paths []string, currentPath []string
 		}
 		return v, nil
 	case map[string]interface{}:
-		for k, e := range v {
+		// sorted keys make the returned error independent of the map iteration order
+		keys := slices.Sorted(maps.Keys(v))
+		for _, k := range keys {
 			nextPath := []string{}
 			nextPath = append(nextPath, currentPath...)
 			nextPath = append(nextPath, k)
-			v[k], err = recursiveJsonUnwrap(e, paths, nextPath)
+			v[k], err = recursiveJsonUnwrap(v[k], paths, nextPath)
 			if err != nil {
 				return nil, err
 			}

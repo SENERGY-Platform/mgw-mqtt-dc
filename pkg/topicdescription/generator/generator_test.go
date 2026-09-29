@@ -22,6 +22,7 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/models/go/models"
 	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -733,5 +734,25 @@ func TestGeneratorDuplicate(t *testing.T) {
 		e, _ := json.Marshal(expected)
 		a, _ := json.Marshal(actual)
 		t.Error("\n", string(e), "\n", string(a))
+	}
+}
+
+func TestGenerateTopicMissingKeys(t *testing.T) {
+	attributes := []models.Attribute{{Key: "CmdPrefix", Value: "cmnd/"}}
+
+	topic, missing, err := GenerateTopic("{{.CmdPrefix}}{{.Device}}/{{.Service}}", "d1", "s1", "", attributes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if topic != "cmnd/d1/s1" || len(missing) != 0 {
+		t.Errorf("unexpected result: %v %v", topic, missing)
+	}
+
+	topic, missing, err = GenerateTopic("{{.RespPrefix}}{{.Device}}/{{.Service}}{{if .Suffix}}/{{.Suffix}}{{end}}{{.RespPrefix}}", "d1", "s1", "", attributes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if topic != "d1/s1" || !slices.Equal(missing, []string{"RespPrefix", "Suffix"}) {
+		t.Errorf("unexpected result: %v %v", topic, missing)
 	}
 }

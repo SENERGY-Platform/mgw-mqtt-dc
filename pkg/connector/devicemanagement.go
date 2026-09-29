@@ -19,6 +19,7 @@ package connector
 import (
 	"errors"
 	"net/url"
+	"strings"
 
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/mgw"
 )
@@ -34,9 +35,11 @@ func (this *Connector) updateTopics() (err error) {
 		return err
 	}
 
-	err = this.validateTopicDescriptions(topics)
-	if err != nil {
-		return err
+	topics, rejectedDevices := this.validateTopicDescriptions(topics)
+	for deviceId, reasons := range rejectedDevices {
+		reason := strings.Join(reasons, "; ")
+		this.config.GetLogger().Warn("rejected invalid device topic descriptions", "deviceLocalId", deviceId, "reason", reason)
+		this.mgwClient.SendDeviceError(deviceId, "rejected invalid device topic descriptions: "+reason)
 	}
 
 	events, commands, responses := this.splitTopicDescriptions(topics)
@@ -124,7 +127,12 @@ func (this *Connector) updateTopics() (err error) {
 		if _, ok := usedDevices[id]; !ok {
 			if _, ok2 := removedDevices[id]; !ok2 {
 				removedDevices[id] = true
-				err := this.removeDevice(oldDesc)
+				// a rejected device is misconfigured, not removed: keep it in the mgw, so that the device error stays visible
+				if _, rejected := rejectedDevices[id]; rejected {
+					err = this.mgwClient.StopListenToDeviceCommands(id)
+				} else {
+					err = this.removeDevice(oldDesc)
+				}
 				if err != nil {
 					return err
 				}

@@ -18,12 +18,16 @@ package connector
 
 import (
 	"encoding/json"
-	"errors"
+	"slices"
 
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 )
 
-func (this *Connector) validateTopicDescriptions(topics []TopicDescription) error {
+// validateTopicDescriptions returns the valid topic descriptions and the rejected devices with their reasons.
+// a device is always rejected as a whole, to prevent partially registered devices.
+// if a conflict involves multiple devices (e.g. a reused event topic), all of them are rejected,
+// because it is not decidable which one is configured correctly.
+func (this *Connector) validateTopicDescriptions(topics []TopicDescription) (valid []TopicDescription, rejected map[string][]string) {
 	topics = util.ListFilterDuplicates(topics, func(a TopicDescription, b TopicDescription) bool {
 		duplicate := EqualTopicDesc(a, b)
 		if duplicate {
@@ -32,9 +36,16 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 		return duplicate
 	})
 
-	eventTopicUsed := map[string]bool{}
-	respTopicUsed := map[string]bool{}
-	cmdTopicUsed := map[string]bool{}
+	rejected = map[string][]string{}
+	reject := func(deviceIds []string, reason string) {
+		for _, deviceId := range util.ListFilterDuplicates(deviceIds, func(a string, b string) bool { return a == b }) {
+			rejected[deviceId] = append(rejected[deviceId], reason)
+		}
+	}
+
+	eventTopicUsers := map[string][]string{}
+	cmdTopicUsers := map[string][]string{}
+	respTopicUsers := map[string][]string{}
 	cmdIdUsed := map[string]bool{}
 
 	deviceToName := map[string]string{}
@@ -51,7 +62,8 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 		//check for invalid element
 		if cmd == event || (cmd != "" && event != "") {
 			j, _ := json.Marshal(map[string]string{"e": event, "c": cmd, "r": resp})
-			return errors.New("invalid topic description: expect either event or command topic: " + string(j))
+			reject([]string{deviceId}, "invalid topic description: expect either event or command topic: "+string(j))
+			continue
 		}
 		if resp != "" && cmd == "" {
 			this.config.GetLogger().Warn("response topic will not be used if command topic is not set", "event_topic", event, "cmd_topic", cmd, "resp_topic", resp)
@@ -59,56 +71,80 @@ func (this *Connector) validateTopicDescriptions(topics []TopicDescription) erro
 
 		//check for name redefinition
 		if known, exists := deviceToName[deviceId]; exists && known != deviceName {
-			return errors.New("device " + deviceId + " has multiple name assignments: " + known + " and " + deviceName)
+			reject([]string{deviceId}, "device "+deviceId+" has multiple name assignments: "+known+" and "+deviceName)
 		} else {
 			deviceToName[deviceId] = deviceName
 		}
 
 		//check for device-type redefinition
 		if known, exists := deviceToDeviceType[deviceId]; exists && known != deviceTypeId {
-			return errors.New("device " + deviceId + " has multiple device-type-id assignments: " + known + " and " + deviceTypeId)
+			reject([]string{deviceId}, "device "+deviceId+" has multiple device-type-id assignments: "+known+" and "+deviceTypeId)
 		} else {
 			deviceToDeviceType[deviceId] = deviceTypeId
 		}
 
-		//check for response topic reuse for commands
-		if cmd != "" {
-			cmdTopicUsed[cmd] = true
-		}
-		if resp != "" {
-			if exists := cmdTopicUsed[resp]; exists {
-				return errors.New("collision between command and response topic: " + resp)
-			}
-		}
-
 		//check for device-id + service-id reuse in commands (a command topic can be used for mor than one service)
 		if cmd != "" {
-			if exists := cmdIdUsed[cmdId]; exists {
-				return errors.New("reused device-id/service-id: " + cmdId)
+			if cmdIdUsed[cmdId] {
+				reject([]string{deviceId}, "reused device-id/service-id: "+cmdId)
 			}
 			cmdIdUsed[cmdId] = true
 		}
 
-		//check for event topic reuse for other events --> error
 		if event != "" {
-			if exists := eventTopicUsed[event]; exists {
-				return errors.New("reused event topic: " + event)
-			}
-			eventTopicUsed[event] = true
+			eventTopicUsers[event] = append(eventTopicUsers[event], deviceId)
 		}
+		if cmd != "" {
+			cmdTopicUsers[cmd] = append(cmdTopicUsers[cmd], deviceId)
+		}
+		if resp != "" && cmd != "" {
+			respTopicUsers[resp] = append(respTopicUsers[resp], deviceId)
+		}
+	}
 
-		//WARN if event and response topic collide (it's but warning would be nice)
-		if resp != "" {
+	//check for event topic reuse for other events
+	for event, deviceIds := range eventTopicUsers {
+		if len(deviceIds) > 1 {
+			reject(deviceIds, "reused event topic: "+event)
+		}
+	}
+
+	//check for response topic reuse for commands
+	for resp, respDeviceIds := range respTopicUsers {
+		if cmdDeviceIds, exists := cmdTopicUsers[resp]; exists {
+			reject(append(slices.Clone(respDeviceIds), cmdDeviceIds...), "collision between command and response topic: "+resp)
+		}
+	}
+
+	// the reasons are part of the error message sent to the mgw, which must be stable to be deduplicated
+	for deviceId, reasons := range rejected {
+		slices.Sort(reasons)
+		rejected[deviceId] = slices.Compact(reasons)
+	}
+
+	valid = util.ListFilter(topics, func(topic TopicDescription) bool {
+		_, isRejected := rejected[topic.GetLocalDeviceId()]
+		return !isRejected
+	})
+
+	//WARN if event and response topic collide (it's but warning would be nice)
+	eventTopicUsed := map[string]bool{}
+	respTopicUsed := map[string]bool{}
+	for _, topic := range valid {
+		if event := topic.GetEventTopic(); event != "" {
+			eventTopicUsed[event] = true
+			if respTopicUsed[event] {
+				this.config.GetLogger().Warn("event topic is also used as response topic", "topic", event)
+			}
+		}
+		if resp := topic.GetResponseTopic(); resp != "" && topic.GetCmdTopic() != "" {
 			respTopicUsed[resp] = true
 			if eventTopicUsed[resp] {
 				this.config.GetLogger().Warn("response topic is also used as event topic", "topic", resp)
 			}
 		}
-		if event != "" && respTopicUsed[event] {
-			this.config.GetLogger().Warn("event topic is also used as response topic", "topic", event)
-		}
 	}
-	return nil
+	return valid, rejected
 }
 
 func descToStr(desc TopicDescription) string {
