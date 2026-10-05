@@ -47,6 +47,7 @@ type Connector struct {
 	MaxCorrelationIdAge   time.Duration
 	onlineCheck           OnlineChecker
 	devicerepo            *devicerepo.DeviceRepo
+	activatedDevices      *ActivatedDevices
 }
 
 type OnlineChecker interface {
@@ -88,6 +89,15 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 		return result, err
 	}
 
+	activatedDevicesFile := ""
+	if config.ActivateDevicesOnEvent {
+		activatedDevicesFile = config.ActivatedDevicesFile
+	}
+	activatedDevices, err := LoadActivatedDevices(activatedDevicesFile)
+	if err != nil {
+		return result, err
+	}
+
 	commandMqttClient, err := mqttFactory(ctx, config.MqttBroker, config.MqttCmdClientId, config.MqttUser, config.MqttPw, config.MqttInsecureSkipVerify)
 	if err != nil {
 		return result, err
@@ -109,6 +119,7 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 		correlationStore:      util.NewSyncMap[[]CorrelationId](),
 		onlineCheck:           checker,
 		devicerepo:            repo,
+		activatedDevices:      activatedDevices,
 	}
 	result.MaxCorrelationIdAge, err = time.ParseDuration(config.MaxCorrelationIdAge)
 	if err != nil {

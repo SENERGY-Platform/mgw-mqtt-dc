@@ -16,6 +16,8 @@
     "delete_devices": true,
     "max_correlation_id_age": "90s",
     "error_deduplication_period": "1h",
+    "activate_devices_on_event": false,
+    "activated_devices_file": "activated_devices.json",
 
     "generator_use": false,
     "generator_auth_username": "",

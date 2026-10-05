@@ -121,6 +121,11 @@ func (this *Connector) updateTopics() (err error) {
 		}
 	}
 
+	deviceHasEvents := map[string]bool{}
+	for _, topic := range events {
+		deviceHasEvents[topic.GetLocalDeviceId()] = true
+	}
+
 	addedDevices := map[string]bool{}
 	removedDevices := map[string]bool{}
 
@@ -129,6 +134,10 @@ func (this *Connector) updateTopics() (err error) {
 		if _, ok := usedDevices[id]; !ok {
 			if _, ok2 := removedDevices[id]; !ok2 {
 				removedDevices[id] = true
+				if !this.deviceIsActive(id) {
+					// the device has never been registered at the mgw
+					continue
+				}
 				// a rejected device is misconfigured, not removed: keep it in the mgw, so that the device error stays visible
 				if _, rejected := rejectedDevices[id]; rejected {
 					err = this.mgwClient.StopListenToDeviceCommands(id)
@@ -144,6 +153,14 @@ func (this *Connector) updateTopics() (err error) {
 
 	//find new devices to add/update
 	for id, desc := range usedDevices {
+		wasActive := this.deviceIsActive(id)
+		if !wasActive && !deviceHasEvents[id] {
+			// without event topics there is no event that could activate the device
+			this.storeActivatedDevice(id)
+		}
+		if !this.deviceIsActive(id) {
+			continue
+		}
 		state := mgw.Online
 		if temp, ok := this.onlineCheck.LoadState(desc); ok {
 			state = temp
@@ -154,7 +171,7 @@ func (this *Connector) updateTopics() (err error) {
 			this.mgwClient.SendClientError("unable to send device info to mgw: " + util.MgwErrorMessage(err))
 			return err
 		}
-		if _, ok := oldDevices[id]; !ok {
+		if _, ok := oldDevices[id]; !ok || !wasActive {
 			if _, ok2 := addedDevices[id]; !ok2 {
 				addedDevices[id] = true
 				err := this.addDeviceCommandListener(desc)
@@ -163,6 +180,17 @@ func (this *Connector) updateTopics() (err error) {
 				}
 			}
 		}
+	}
+
+	// forget devices without topic descriptions; rejected devices stay in the mgw and therefore stay activated
+	err = this.activatedDevices.Retain(func(id string) bool {
+		_, used := usedDevices[id]
+		_, rejected := rejectedDevices[id]
+		return used || rejected
+	})
+	if err != nil {
+		this.config.GetLogger().Error("unable to store activated devices", "error", err)
+		this.mgwClient.SendClientError("unable to store activated devices: " + util.MgwErrorMessage(err))
 	}
 
 	//update subscriptions (only after device registration to ensure evaluation of retained messages)
@@ -180,6 +208,53 @@ func (this *Connector) updateTopics() (err error) {
 	}
 
 	return nil
+}
+
+// deviceIsActive reports whether the device is registered at the mgw.
+// if config.ActivateDevicesOnEvent is set, a device is registered only after its first event.
+func (this *Connector) deviceIsActive(localDeviceId string) bool {
+	return !this.config.ActivateDevicesOnEvent || this.activatedDevices.Contains(localDeviceId)
+}
+
+func (this *Connector) storeActivatedDevice(localDeviceId string) {
+	// Add keeps the id in memory even if the file could not be written
+	err := this.activatedDevices.Add(localDeviceId)
+	if err != nil {
+		this.config.GetLogger().Error("unable to store activated devices", "error", err)
+		this.mgwClient.SendClientError("unable to store activated devices: " + util.MgwErrorMessage(err))
+	}
+}
+
+// activateDevice registers the device of desc at the mgw on its first event.
+// returns false if the topic description has been removed in the meantime.
+func (this *Connector) activateDevice(desc TopicDescription) (active bool, err error) {
+	this.updateTopicsMux.Lock()
+	defer this.updateTopicsMux.Unlock()
+	id := desc.GetLocalDeviceId()
+	if this.deviceIsActive(id) {
+		return true, nil
+	}
+	// the description may have changed since the event has been received
+	current, ok := this.eventTopicRegister.Get(desc.GetEventTopic())
+	if !ok || current.GetLocalDeviceId() != id {
+		return false, nil
+	}
+	desc = current
+	this.config.GetLogger().Info("activate device after first event", "deviceName", desc.GetDeviceName(), "deviceLocalId", id)
+	state := mgw.Online
+	if temp, ok := this.onlineCheck.LoadState(desc); ok {
+		state = temp
+	}
+	err = this.mgwClient.SetDevice(id, desc.GetDeviceName(), desc.GetDeviceTypeId(), string(state))
+	if err != nil {
+		return false, err
+	}
+	err = this.addDeviceCommandListener(desc)
+	if err != nil {
+		return false, err
+	}
+	this.storeActivatedDevice(id)
+	return true, nil
 }
 
 func getCommandIdFromDesc(desc TopicDescription) string {

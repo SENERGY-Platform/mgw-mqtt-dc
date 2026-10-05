@@ -34,6 +34,26 @@ func (this *Connector) EventHandler(topic string, retained bool, payload []byte)
 			return
 		}
 	}
+	if this.deviceIsActive(desc.GetLocalDeviceId()) {
+		this.forwardEvent(topic, desc, retained, payload)
+	} else {
+		go func() {
+			active, err := this.activateDevice(desc)
+			if err != nil {
+				this.config.GetLogger().Error("unable to activate device", "topic", topic, "error", err)
+				this.mgwClient.SendClientError("unable to activate device: " + util.MgwErrorMessage(err))
+				return
+			}
+			if !active {
+				this.config.GetLogger().Debug("drop event of removed device description", "topic", topic)
+				return
+			}
+			this.forwardEvent(topic, desc, retained, payload)
+		}()
+	}
+}
+
+func (this *Connector) forwardEvent(topic string, desc TopicDescription, retained bool, payload []byte) {
 	go func() {
 		err := this.mgwClient.SendEvent(desc.GetLocalDeviceId(), desc.GetLocalServiceId(), payload)
 		if err != nil {

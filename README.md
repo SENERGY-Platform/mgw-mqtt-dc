@@ -50,6 +50,14 @@ String. Duration.
 #### error_deduplication_period
 String. Duration. An error message is forwarded to the MGW only if the same message (same topic and text) has not been sent within this period. Empty or `-` disables the deduplication.
 
+#### activate_devices_on_event
+Boolean. If set, a device with event topics is registered at the MGW (and thereby added to the hub) only after the first event on one of its event topics has been received. Until then its event topics are subscribed, but no device info is sent and no commands are accepted. Devices without event topics are registered immediately, because no event could activate them.
+Use this as alternative or in addition to `generator_filter_devices_by_attribute`, if the user has more than one MGW or mgw-mqtt-dc and the devices of each deployment are only recognizable by the messages on its own broker.
+A device that has never been activated is not removed or deleted when its topic description disappears, because it may belong to another deployment.
+
+#### activated_devices_file
+String. File location. Stores the local ids of activated devices, so that they are registered immediately after a restart. Only used if `activate_devices_on_event` is set. Empty or `-` keeps the ids only in memory. In a container this file should be on a persistent volume. It must not be placed inside `device_descriptions_dir`, because every json file there is read as topic description.
+
 #### generator_use
 Boolean. Decides if Topic-Descriptions should be generated.
 

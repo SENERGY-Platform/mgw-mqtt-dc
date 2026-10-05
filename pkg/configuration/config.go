@@ -51,6 +51,8 @@ type Config struct {
 	DeleteDevices            bool   `json:"delete_devices"`
 	MaxCorrelationIdAge      string `json:"max_correlation_id_age"`
 	ErrorDeduplicationPeriod string `json:"error_deduplication_period"`
+	ActivateDevicesOnEvent   bool   `json:"activate_devices_on_event"`
+	ActivatedDevicesFile     string `json:"activated_devices_file"`
 
 	GeneratorUse bool `json:"generator_use"`
 
