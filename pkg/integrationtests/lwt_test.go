@@ -26,7 +26,6 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/models/go/models"
 	"log"
-	"path"
 	"reflect"
 	"sync"
 	"testing"
@@ -82,7 +81,6 @@ func TestLwt(t *testing.T) {
 
 	tempDir := t.TempDir()
 
-	config.FallbackFile = path.Join(tempDir, "fallback.json")
 	config.GeneratorDeviceDescriptionsDir = tempDir
 	config.DeviceDescriptionsDir = tempDir
 
@@ -405,7 +403,6 @@ func TestLwt2(t *testing.T) {
 
 	tempDir := t.TempDir()
 
-	config.FallbackFile = path.Join(tempDir, "fallback.json")
 	config.GeneratorDeviceDescriptionsDir = tempDir
 	config.DeviceDescriptionsDir = tempDir
 

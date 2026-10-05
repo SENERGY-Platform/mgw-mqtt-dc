@@ -62,7 +62,6 @@ func TestGetDeviceInfos(t *testing.T) {
 	repo, err := devicerepo.New(devicerepo.RepoConfig{
 		DeviceRepositoryUrl: repoUrl,
 		CacheDuration:       "10s",
-		FallbackFile:        "",
 	}, a)
 	if err != nil {
 		t.Error(err)

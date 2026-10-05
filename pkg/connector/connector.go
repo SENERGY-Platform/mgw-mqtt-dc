@@ -78,7 +78,6 @@ func NewWithFactories(ctx context.Context, config configuration.Config, topicDes
 	repo, err := devicerepo.New(devicerepo.RepoConfig{
 		DeviceRepositoryUrl: config.GeneratorDeviceRepositoryUrl,
 		CacheDuration:       config.DeviceRepoCacheDuration,
-		FallbackFile:        config.FallbackFile,
 	}, a)
 	if err != nil {
 		return result, err

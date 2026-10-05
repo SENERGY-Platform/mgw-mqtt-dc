@@ -33,7 +33,6 @@ import (
 	"github.com/SENERGY-Platform/mgw-mqtt-dc/pkg/util"
 	"github.com/SENERGY-Platform/models/go/models"
 	"github.com/SENERGY-Platform/service-commons/pkg/cache"
-	"github.com/SENERGY-Platform/service-commons/pkg/cache/fallback"
 )
 
 func New(config RepoConfig, auth *auth.Auth) (result *DeviceRepo, err error) {
@@ -49,11 +48,7 @@ func New(config RepoConfig, auth *auth.Auth) (result *DeviceRepo, err error) {
 	result.client = client.NewClient(config.DeviceRepositoryUrl, func() (token string, err error) {
 		return result.GetToken()
 	})
-	cacheConf := cache.Config{}
-	if config.FallbackFile != "" && config.FallbackFile != "-" {
-		cacheConf.FallbackProvider = fallback.NewProvider(config.FallbackFile)
-	}
-	result.cache, err = cache.New(cacheConf)
+	result.cache, err = cache.New(cache.Config{})
 	if err != nil {
 		return result, err
 	}
@@ -63,7 +58,6 @@ func New(config RepoConfig, auth *auth.Auth) (result *DeviceRepo, err error) {
 type RepoConfig struct {
 	DeviceRepositoryUrl string
 	CacheDuration       string
-	FallbackFile        string
 }
 
 type DeviceRepo struct {
