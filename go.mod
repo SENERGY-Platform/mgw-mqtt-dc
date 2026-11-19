@@ -11,7 +11,7 @@ require (
 	github.com/SENERGY-Platform/models/go v0.0.0-20260911075423-f01521c01da2
 	github.com/SENERGY-Platform/platform-connector-lib v0.0.0-20260826082643-802ca9df203c
 	github.com/SENERGY-Platform/service-commons v0.0.0-20260821114734-3e4578ac2358
-	github.com/eclipse/paho.mqtt.golang v1.4.3
+	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/testcontainers/testcontainers-go v0.40.0
 	gopkg.in/yaml.v2 v2.4.0
